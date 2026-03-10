@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คู่มือตำรวจจราจร — กองบังคับการตำรวจจราจร  กองบัญชาการตำรวจนครบาล</title>
+<style>
+  /* ======= RESET & BASE ======= */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0D1B4B;
+    --navy2: #1a2d6b;
+    --gold: #C9A84C;
+    --gold2: #e8c96e;
+    --blue: #1565C0;
+    --lightblue: #E3F2FD;
+    --white: #ffffff;
+    --gray: #f5f6fa;
+    --gray2: #e8eaf0;
+    --text: #1a1a2e;
+    --text2: #4a4a6a;
+    --shadow: 0 4px 24px rgba(13,27,75,0.10);
+    --radius: 12px;
+    --radius2: 8px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Sarabun', 'Noto Sans Thai', Arial, sans-serif;
+    background: var(--gray);
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.7;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ======= TOP BAR ======= */
+  .topbar {
+    background: var(--navy);
+    color: var(--gold);
+    font-size: 13px;
+    padding: 6px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .topbar a { color: var(--gold2); font-size: 13px; }
+  .topbar a:hover { color: #fff; }
+
+  /* ======= HEADER ======= */
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 60%, #263370 100%);
+    color: white;
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .header-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 70px;
+  }
+  .logo-area {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+  }
+  .logo-icon {
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: transparent;
+  }
+  .logo-icon img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+  }
+  .logo-text h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+  .logo-text p { font-size: 12px; color: rgba(255,255,255,0.75); }
+
+  /* ======= SEARCH BAR ======= */
+  .search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    max-width: 400px;
+    margin: 0 24px;
+  }
+  .search-wrap input {
+    width: 100%;
+    padding: 9px 16px;
+    border-radius: 24px;
+    border: none;
+    background: rgba(255,255,255,0.15);
+    color: white;
+    font-size: 14px;
+    outline: none;
+    transition: background 0.2s;
+  }
+  .search-wrap input::placeholder { color: rgba(255,255,255,0.6); }
+  .search-wrap input:focus { background: rgba(255,255,255,0.25); }
+  .search-btn {
+    background: var(--gold);
+    border: none;
+    padding: 9px 16px;
+    border-radius: 24px;
+    color: var(--navy);
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+  .search-btn:hover { background: var(--gold2); }
+
+  /* ======= HEADER RIGHT ======= */
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .btn-admin {
+    background: transparent;
+    border: 1.5px solid var(--gold);
+    color: var(--gold);
+    padding: 7px 16px;
+    border-radius: 24px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .btn-admin:hover { background: var(--gold); color: var(--navy); }
+
+  /* ======= NAV ======= */
+  nav {
+    background: rgba(0,0,0,0.25);
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .nav-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-inner::-webkit-scrollbar { display: none; }
+  .nav-item {
+    color: rgba(255,255,255,0.8);
+    padding: 10px 14px;
+    font-size: 13.5px;
+    white-space: nowrap;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .nav-item:hover { color: white; border-bottom-color: var(--gold); }
+  .nav-item.active { color: var(--gold); border-bottom-color: var(--gold); font-weight: 600; }
+
+  /* ======= HERO ======= */
+  .hero {
+    background: linear-gradient(135deg, var(--navy) 0%, #1e3a8a 50%, #1565C0 100%);
+    color: white;
+    text-align: center;
+    padding: 60px 24px 50px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .hero h2 { font-size: 42px; font-weight: 800; margin-bottom: 12px; position: relative; }
+  .hero h2 span { color: var(--gold); }
+  .hero p { font-size: 18px; color: rgba(255,255,255,0.85); margin-bottom: 8px; position: relative; }
+  .hero .badge {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--navy);
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    margin-top: 8px;
+    position: relative;
+  }
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 32px;
+    position: relative;
+  }
+  .stat-item { text-align: center; }
+  .stat-item .num { font-size: 28px; font-weight: 800; color: var(--gold); }
+  .stat-item .label { font-size: 13px; color: rgba(255,255,255,0.75); }
+
+  /* ======= MAIN LAYOUT ======= */
+  .main-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+
+  /* ======= SECTION TITLE ======= */
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .section-title h3 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(to right, var(--navy), transparent);
+    opacity: 0.15;
+  }
+
+  /* ======= QUICK ACCESS GRID ======= */
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .quick-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: var(--shadow);
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+  }
+  .quick-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--card-color, var(--blue));
+  }
+  .quick-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(13,27,75,0.15);
+    border-color: var(--card-color, var(--blue));
+  }
+  .quick-card .icon { font-size: 32px; margin-bottom: 10px; }
+  .quick-card .title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .quick-card .desc {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  /* ======= CONTENT PAGE ======= */
+  #content-area { display: none; }
+  #home-area { display: block; }
+
+  .page-header {
+    background: white;
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .page-header-icon {
+    font-size: 48px;
+    width: 72px; height: 72px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 16px;
+    flex-shrink: 0;
+  }
+  .page-header h2 { font-size: 28px; font-weight: 800; color: var(--navy); }
+  .page-header p { color: var(--text2); margin-top: 4px; font-size: 15px; }
+  .btn-sop {
+    background: #E65100;
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    transition: background 0.2s;
+  }
+  .btn-sop:hover { background: #BF360C; }
+  .btn-back {
+    background: var(--gray2);
+    border: none;
+    padding: 8px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text2);
+    transition: background 0.2s;
+    margin-left: auto;
+  }
+  .btn-back:hover { background: #d0d4e8; }
+
+  /* ======= DOC SECTION ======= */
+  .doc-section {
+    background: white;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .doc-section-header {
+    padding: 16px 24px;
+    font-weight: 700;
+    font-size: 16px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .doc-section-header .toggle-icon { margin-left: auto; transition: transform 0.2s; }
+  .doc-section-header.open .toggle-icon { transform: rotate(180deg); }
+  .doc-list { padding: 8px 0; }
+  .doc-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 24px;
+    border-bottom: 1px solid #f0f2f8;
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+  .doc-item:last-child { border-bottom: none; }
+  .doc-item:hover { background: var(--lightblue); }
+  .doc-item-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: #E3F2FD;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .doc-item-text { flex: 1; }
+  .doc-item-title { font-size: 15px; color: var(--text); font-weight: 500; }
+  .doc-item-title a { color: var(--text); }
+  .doc-item-title a:hover { color: var(--blue); }
+  .no-link { color: #999; font-size: 12px; margin-top: 2px; }
+  .doc-badge {
+    background: #E3F2FD;
+    color: #1565C0;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    margin-top: 4px;
+    display: inline-block;
+  }
+
+  /* ======= FAQ ======= */
+  .faq-section {
+    background: white;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .faq-header {
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #37474F, #546E7A);
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+  }
+  .faq-item {
+    border-bottom: 1px solid #f0f2f8;
+    overflow: hidden;
+  }
+  .faq-question {
+    padding: 14px 24px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    color: var(--navy);
+    transition: background 0.15s;
+  }
+  .faq-question:hover { background: #f8f9ff; }
+  .faq-answer {
+    padding: 0 24px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    color: var(--text2);
+    font-size: 15px;
+    line-height: 1.8;
+  }
+  .faq-answer.open { max-height: 300px; padding: 0 24px 16px; }
+
+  /* ======= SEARCH RESULTS ======= */
+  #search-area { display: none; }
+  .search-result-item {
+    background: white;
+    border-radius: var(--radius2);
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    cursor: pointer;
+    border-left: 4px solid var(--blue);
+    transition: box-shadow 0.2s;
+  }
+  .search-result-item:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+  .search-result-cat { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .search-result-title { font-size: 15px; font-weight: 600; color: var(--navy); }
+  mark { background: #fff9c4; color: inherit; padding: 0 2px; border-radius: 2px; }
+
+  /* ======= FOOTER ======= */
+  footer {
+    background: var(--navy);
+    color: rgba(255,255,255,0.75);
+    padding: 40px 24px 24px;
+    margin-top: 48px;
+  }
+  .footer-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 40px;
+  }
+  .footer-brand h3 { color: var(--gold); font-size: 18px; margin-bottom: 10px; }
+  .footer-brand p { font-size: 14px; line-height: 1.8; }
+  .footer-col h4 { color: white; font-size: 15px; margin-bottom: 12px; }
+  .footer-col ul { list-style: none; }
+  .footer-col li { font-size: 14px; padding: 3px 0; }
+  .footer-col li a { color: rgba(255,255,255,0.65); }
+  .footer-col li a:hover { color: var(--gold); }
+  .footer-bottom {
+    border-top: 1px solid rgba(255,255,255,0.1);
+    margin-top: 32px;
+    padding-top: 20px;
+    text-align: center;
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+  }
+
+  /* ======= MODAL ======= */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: white;
+    border-radius: var(--radius);
+    padding: 36px;
+    width: 420px;
+    max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .modal-box h3 { font-size: 20px; color: var(--navy); margin-bottom: 20px; }
+  .modal-box input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid #dde1f0;
+    border-radius: 8px;
+    font-size: 15px;
+    margin-bottom: 16px;
+    outline: none;
+    transition: border 0.2s;
+  }
+  .modal-box input:focus { border-color: var(--blue); }
+  .modal-actions { display: flex; gap: 12px; }
+  .btn-primary {
+    flex: 1;
+    background: var(--navy);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-primary:hover { background: var(--navy2); }
+  .btn-cancel {
+    flex: 1;
+    background: var(--gray2);
+    color: var(--text2);
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .modal-error { color: #c62828; font-size: 14px; margin-top: -8px; margin-bottom: 12px; }
+
+  /* ======= RESPONSIVE ======= */
+  @media (max-width: 768px) {
+    .hero h2 { font-size: 28px; }
+    .hero-stats { gap: 24px; }
+    .search-wrap { max-width: 200px; margin: 0 8px; }
+    .logo-text p { display: none; }
+    .footer-inner { grid-template-columns: 1fr; gap: 24px; }
+    .page-header { flex-wrap: wrap; }
+    .btn-back { margin-left: 0; }
+    .quick-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span>🏛️ กองบังคับการตำรวจจราจร  กองบัญชาการตำรวจนครบาล</span>
+  <a href="admin.html" target="_blank">⚙️ เข้าสู่ระบบ Admin</a>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <div class="logo-area" onclick="showHome()">
+      <div class="logo-icon"><img src="logo.png" alt="โลโก้ตำรวจจราจร"></div>
+      <div class="logo-text">
+        <h1>คู่มือตำรวจจราจร</h1>
+        <p>กองบังคับการตำรวจจราจร  กองบัญชาการตำรวจนครบาล</p>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <input type="text" id="searchInput" placeholder="ค้นหาเอกสาร กฎหมาย คำสั่ง..." onkeyup="handleSearch(event)">
+      <button class="search-btn" onclick="doSearch()">ค้นหา</button>
+    </div>
+    <div class="header-right">
+      <button class="btn-admin" onclick="openAdminModal()">⚙️ Admin</button>
+    </div>
+  </div>
+  <nav>
+    <div class="nav-inner" id="navBar">
+      <div class="nav-item active" onclick="showHome()" id="nav-home">🏠 หน้าแรก</div>
+    </div>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="heroSection">
+  <img src="logo.png" alt="โลโก้ตำรวจจราจร" style="width:100px;height:100px;object-fit:contain;margin-bottom:12px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5))">
+  <h2>คู่มือ<span>ตำรวจจราจร</span></h2>
+  <p>กฎหมาย ระเบียบ ข้อบังคับ ประกาศ คำสั่ง หนังสือสั่งการ คู่มือการปฏิบัติงาน</p>
+  <span class="badge">จัดทำโดย พ.ต.อ.จามร ทองพรรณ รอง ผบก.จร. (พ.ศ.2569)</span>
+  <div class="hero-stats" id="heroStats">
+    <div class="stat-item"><div class="num" id="statCat">0</div><div class="label">หมวดหมู่</div></div>
+    <div class="stat-item"><div class="num" id="statDoc">0</div><div class="label">เอกสาร</div></div>
+    <div class="stat-item"><div class="num" id="statSec">0</div><div class="label">หมวดย่อย</div></div>
+  </div>
+</section>
+
+<!-- MAIN -->
+<div class="main-container">
+
+  <!-- HOME AREA -->
+  <div id="home-area">
+    <div class="section-title"><h3>📂 หมวดหมู่ทั้งหมด</h3></div>
+    <div class="quick-grid" id="quickGrid"></div>
+  </div>
+
+  <!-- CONTENT AREA -->
+  <div id="content-area">
+    <div class="page-header" id="pageHeader">
+      <div class="page-header-icon" id="pageIcon"></div>
+      <div style="flex:1">
+        <h2 id="pageTitle"></h2>
+        <p id="pageDesc"></p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn-sop" id="btnSop" style="display:none" onclick="openSop()">🌐 เปิด SOP</button>
+        <button class="btn-back" onclick="showHome()">← กลับหน้าหลัก</button>
+      </div>
+    </div>
+    <div id="pageContent"></div>
+  </div>
+
+  <!-- SEARCH AREA -->
+  <div id="search-area">
+    <div class="section-title"><h3 id="searchTitle">🔍 ผลการค้นหา</h3></div>
+    <div id="searchResults"></div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <h3><img src="logo.png" alt="โลโก้" style="width:36px;height:36px;object-fit:contain;vertical-align:middle;margin-right:8px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3))">คู่มือตำรวจจราจร</h3>
+      <p>แหล่งรวมความรู้สำหรับตำรวจสายงานจราจร<br>
+      กฎหมาย ระเบียบ คำสั่ง และแนวทางปฏิบัติงาน<br>
+      จัดทำโดย พ.ต.อ.จามร ทองพรรณ รอง ผบก.จร. (พ.ศ.2569)</p>
+    </div>
+    <div class="footer-col">
+      <h4>ลิงก์ด่วน</h4>
+      <ul>
+        <li><a href="#" onclick="showCat('pinai')">ปรับเป็นพินัย</a></li>
+        <li><a href="#" onclick="showCat('ptm')">ระบบ PTM</a></li>
+        <li><a href="#" onclick="showCat('tpcc')">ระบบ TPCC</a></li>
+        <li><a href="#" onclick="showCat('checkpoint')">การตั้งจุดตรวจ</a></li>
+        <li><a href="#" onclick="showCat('exam')">คลังข้อสอบ</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>ระบบงาน</h4>
+      <ul>
+        <li><a href="#" onclick="showCat('ear')">E-AR ไปรษณีย์อิเล็กทรอนิกส์</a></li>
+        <li><a href="#" onclick="showCat('prs')">อบถ.ตร. (PRS)</a></li>
+        <li><a href="#" onclick="showCat('points')">ระบบตัดคะแนน</a></li>
+        <li><a href="#" onclick="showCat('finance')">ระเบียบการเงิน</a></li>
+        <li><a href="admin.html" target="_blank">⚙️ Admin Panel</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    © 2569 กองบังคับการตำรวจจราจร  กองบัญชาการตำรวจนครบาล | พัฒนาเพื่อเป็นแหล่งความรู้ตำรวจจราจร
+  </div>
+</footer>
+
+<!-- ADMIN LOGIN MODAL -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal-box">
+    <h3>🔐 เข้าสู่ระบบผู้ดูแล</h3>
+    <p style="color:#666;margin-bottom:16px;font-size:14px;">กรุณาใส่รหัสผ่านเพื่อเข้าสู่ระบบจัดการข้อมูล</p>
+    <input type="password" id="adminPassInput" placeholder="รหัสผ่าน" onkeyup="if(event.key==='Enter') checkAdminPass()">
+    <p class="modal-error" id="passError" style="display:none">รหัสผ่านไม่ถูกต้อง</p>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="checkAdminPass()">เข้าสู่ระบบ</button>
+      <button class="btn-cancel" onclick="closeAdminModal()">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+// ======== STATE ========
+let currentData = loadData();
+let currentCatId = null;
+
+// ======== INIT ========
+document.addEventListener('DOMContentLoaded', () => {
+  buildNav();
+  buildQuickGrid();
+  updateStats();
+});
+
+function updateStats() {
+  let cats = currentData.length;
+  let docs = 0, secs = 0;
+  currentData.forEach(c => {
+    c.sections.forEach(s => { secs++; docs += s.docs.length; });
+  });
+  document.getElementById('statCat').textContent = cats;
+  document.getElementById('statDoc').textContent = docs;
+  document.getElementById('statSec').textContent = secs;
+}
+
+// ======== NAV ========
+function buildNav() {
+  const nav = document.getElementById('navBar');
+  // Keep home button
+  const homeBtn = nav.querySelector('#nav-home');
+  nav.innerHTML = '';
+  nav.appendChild(homeBtn);
+  currentData.forEach(cat => {
+    const el = document.createElement('div');
+    el.className = 'nav-item';
+    el.textContent = cat.icon + ' ' + cat.title;
+    el.onclick = () => showCat(cat.id);
+    el.id = 'nav-' + cat.id;
+    nav.appendChild(el);
+  });
+}
+
+// ======== QUICK GRID ========
+function buildQuickGrid() {
+  const grid = document.getElementById('quickGrid');
+  grid.innerHTML = '';
+  currentData.forEach(cat => {
+    const card = document.createElement('div');
+    card.className = 'quick-card';
+    card.style.setProperty('--card-color', cat.color);
+    const docCount = cat.sections.reduce((a, s) => a + s.docs.length, 0);
+    card.innerHTML = `
+      <div class="icon">${cat.icon}</div>
+      <div class="title">${cat.title}</div>
+      <div class="desc">${cat.description.substring(0,60)}${cat.description.length>60?'...':''}</div>
+      <div style="margin-top:10px;font-size:12px;color:${cat.color};font-weight:700">${docCount} เอกสาร</div>
+    `;
+    card.onclick = () => showCat(cat.id);
+    grid.appendChild(card);
+  });
+}
+
+// ======== SHOW HOME ========
+function showHome() {
+  document.getElementById('home-area').style.display = 'block';
+  document.getElementById('content-area').style.display = 'none';
+  document.getElementById('search-area').style.display = 'none';
+  document.getElementById('heroSection').style.display = 'block';
+  setActiveNav('nav-home');
+  currentCatId = null;
+  buildQuickGrid();
+  updateStats();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ======== SHOW CATEGORY ========
+function showCat(catId) {
+  currentCatId = catId;
+  const cat = currentData.find(c => c.id === catId);
+  if (!cat) return;
+
+  document.getElementById('home-area').style.display = 'none';
+  document.getElementById('content-area').style.display = 'block';
+  document.getElementById('search-area').style.display = 'none';
+  document.getElementById('heroSection').style.display = 'none';
+
+  setActiveNav('nav-' + catId);
+
+  // Page Header
+  document.getElementById('pageIcon').textContent = cat.icon;
+  document.getElementById('pageIcon').style.background = cat.color + '20';
+  document.getElementById('pageTitle').textContent = cat.title;
+  document.getElementById('pageTitle').style.color = cat.color;
+  document.getElementById('pageDesc').textContent = cat.description;
+
+  // Show/hide SOP button
+  const btnSop = document.getElementById('btnSop');
+  if (cat.sopLink) {
+    btnSop.style.display = 'inline-block';
+    btnSop.dataset.url = cat.sopLink;
+  } else {
+    btnSop.style.display = 'none';
+    delete btnSop.dataset.url;
+  }
+
+  // Build sections
+  const content = document.getElementById('pageContent');
+  content.innerHTML = '';
+
+  cat.sections.forEach((sec, si) => {
+    const block = document.createElement('div');
+    block.className = 'doc-section';
+    block.innerHTML = `
+      <div class="doc-section-header open" style="background:linear-gradient(135deg,${cat.color},${cat.color}cc)" onclick="toggleSection(this)">
+        <span>📁 ${sec.title}</span>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="doc-list" id="docList-${catId}-${si}">
+        ${sec.docs.map((doc, di) => `
+          <div class="doc-item" onclick="openDoc('${catId}','${si}','${di}')">
+            <div class="doc-item-icon">${doc.url ? '📄' : '📌'}</div>
+            <div class="doc-item-text">
+              <div class="doc-item-title">
+                ${doc.url
+                  ? `<a href="${doc.url}" target="_blank" onclick="event.stopPropagation()">${doc.title}</a>`
+                  : doc.title}
+              </div>
+              ${!doc.url ? '<span class="no-link">⏳ กำลังดำเนินการอัปโหลดเอกสาร</span>' : ''}
+              ${doc.url ? '<span class="doc-badge">📥 ดาวน์โหลด / ดูเอกสาร</span>' : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    content.appendChild(block);
+  });
+
+  // FAQ
+  if (cat.faq && cat.faq.length > 0) {
+    const faqBlock = document.createElement('div');
+    faqBlock.className = 'faq-section';
+    faqBlock.innerHTML = `
+      <div class="faq-header">❓ คำถามที่พบบ่อย (FAQ)</div>
+      ${cat.faq.map((item, i) => `
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>Q${i+1}. ${item.q}</span>
+            <span>▼</span>
+          </div>
+          <div class="faq-answer">${item.a}</div>
+        </div>
+      `).join('')}
+    `;
+    content.appendChild(faqBlock);
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ======== OPEN SOP ========
+function openSop() {
+  const btnSop = document.getElementById('btnSop');
+  const url = btnSop && btnSop.dataset.url;
+  if (url) window.open(url, '_blank');
+}
+
+// ======== TOGGLE SECTION ========
+function toggleSection(header) {
+  const listId = header.nextElementSibling.id;
+  const list = document.getElementById(listId);
+  if (!list) return;
+  const isOpen = header.classList.contains('open');
+  if (isOpen) {
+    list.style.display = 'none';
+    header.classList.remove('open');
+  } else {
+    list.style.display = 'block';
+    header.classList.add('open');
+  }
+}
+
+// ======== TOGGLE FAQ ========
+function toggleFaq(el) {
+  const answer = el.nextElementSibling;
+  answer.classList.toggle('open');
+}
+
+// ======== OPEN DOC ========
+function openDoc(catId, si, di) {
+  const cat = currentData.find(c => c.id === catId);
+  if (!cat) return;
+  const doc = cat.sections[si].docs[di];
+  if (doc.url) window.open(doc.url, '_blank');
+}
+
+// ======== SET ACTIVE NAV ========
+function setActiveNav(id) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+// ======== SEARCH ========
+function handleSearch(e) {
+  if (e.key === 'Enter') doSearch();
+}
+
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  if (!q) { showHome(); return; }
+
+  document.getElementById('home-area').style.display = 'none';
+  document.getElementById('content-area').style.display = 'none';
+  document.getElementById('search-area').style.display = 'block';
+  document.getElementById('heroSection').style.display = 'none';
+
+  const results = [];
+  currentData.forEach(cat => {
+    cat.sections.forEach(sec => {
+      sec.docs.forEach(doc => {
+        if (doc.title.toLowerCase().includes(q) || sec.title.toLowerCase().includes(q) || cat.title.toLowerCase().includes(q)) {
+          results.push({ cat, sec, doc });
+        }
+      });
+    });
+    if (cat.faq) {
+      cat.faq.forEach(f => {
+        if (f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q)) {
+          results.push({ cat, sec: { title: 'FAQ' }, doc: { title: f.q, url: '' }, isqa: true, answer: f.a });
+        }
+      });
+    }
+  });
+
+  const highlight = t => t.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'), m => `<mark>${m}</mark>`);
+  document.getElementById('searchTitle').textContent = `🔍 ผลการค้นหา "${q}" — พบ ${results.length} รายการ`;
+  const container = document.getElementById('searchResults');
+
+  if (results.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:60px;color:#999">ไม่พบผลการค้นหาสำหรับ "<strong>${q}</strong>"</div>`;
+    return;
+  }
+
+  container.innerHTML = results.map(r => `
+    <div class="search-result-item" style="border-left-color:${r.cat.color}" onclick="showCat('${r.cat.id}')">
+      <div class="search-result-cat">${r.cat.icon} ${r.cat.title} › ${r.sec.title}</div>
+      <div class="search-result-title">${highlight(r.doc.title)}</div>
+      ${r.isqa ? `<div style="color:#666;font-size:13px;margin-top:4px">${highlight(r.answer.substring(0,100))}...</div>` : ''}
+      ${r.doc.url ? `<span class="doc-badge" style="margin-top:8px">📄 มีเอกสารแนบ</span>` : ''}
+    </div>
+  `).join('');
+}
+
+// ======== ADMIN MODAL ========
+function openAdminModal() {
+  document.getElementById('adminModal').classList.add('open');
+  document.getElementById('adminPassInput').value = '';
+  document.getElementById('passError').style.display = 'none';
+  setTimeout(() => document.getElementById('adminPassInput').focus(), 100);
+}
+
+function closeAdminModal() {
+  document.getElementById('adminModal').classList.remove('open');
+}
+
+function checkAdminPass() {
+  const pass = document.getElementById('adminPassInput').value;
+  if (pass === SITE_CONFIG.adminPassword) {
+    closeAdminModal();
+    window.open('admin.html', '_blank');
+  } else {
+    document.getElementById('passError').style.display = 'block';
+    document.getElementById('adminPassInput').value = '';
+    document.getElementById('adminPassInput').focus();
+  }
+}
+
+// Close modal on overlay click
+document.getElementById('adminModal').addEventListener('click', function(e) {
+  if (e.target === this) closeAdminModal();
+});
+</script>
+</body>
+</html>

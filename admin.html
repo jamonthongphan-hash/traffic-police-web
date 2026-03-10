@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — คู่มือตำรวจจราจร</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0D1B4B; --navy2: #1a2d6b; --gold: #C9A84C;
+    --blue: #1565C0; --green: #2E7D32; --red: #C62828;
+    --orange: #E65100; --gray: #f5f6fa; --gray2: #e8eaf0;
+    --text: #1a1a2e; --text2: #4a4a6a;
+    --shadow: 0 4px 20px rgba(13,27,75,0.10);
+  }
+  body { font-family: 'Sarabun', Arial, sans-serif; background: var(--gray); color: var(--text); }
+
+  /* ===== HEADER ===== */
+  header {
+    background: linear-gradient(135deg, var(--navy), var(--navy2));
+    color: white; padding: 0;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .header-inner {
+    max-width: 1200px; margin: 0 auto;
+    padding: 0 24px; display: flex;
+    align-items: center; height: 64px; gap: 16px;
+  }
+  .header-inner h1 { font-size: 20px; flex: 1; }
+  .header-inner h1 span { color: var(--gold); }
+  .btn { padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+  .btn-gold { background: var(--gold); color: var(--navy); }
+  .btn-gold:hover { background: #e8c96e; }
+  .btn-outline { background: transparent; border: 1.5px solid rgba(255,255,255,0.5); color: white; }
+  .btn-outline:hover { background: rgba(255,255,255,0.1); }
+  .btn-green { background: var(--green); color: white; }
+  .btn-green:hover { background: #388e3c; }
+  .btn-red { background: var(--red); color: white; }
+  .btn-red:hover { background: #d32f2f; }
+  .btn-blue { background: var(--blue); color: white; }
+  .btn-blue:hover { background: #1976d2; }
+  .btn-orange { background: var(--orange); color: white; }
+  .btn-sm { padding: 5px 12px; font-size: 13px; }
+
+  /* ===== LOGIN ===== */
+  #loginScreen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--navy) 0%, #1e3a8a 100%);
+  }
+  .login-box {
+    background: white; border-radius: 16px;
+    padding: 48px 40px; width: 400px; max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;
+  }
+  .login-box .logo { font-size: 48px; margin-bottom: 16px; }
+  .login-box h2 { font-size: 22px; color: var(--navy); margin-bottom: 6px; }
+  .login-box p { color: #666; font-size: 14px; margin-bottom: 28px; }
+  .login-box input {
+    width: 100%; padding: 13px 16px; border: 1.5px solid #dde1f0;
+    border-radius: 10px; font-size: 15px; margin-bottom: 16px;
+    outline: none; transition: border 0.2s; text-align: center;
+  }
+  .login-box input:focus { border-color: var(--blue); }
+  .login-box .login-btn {
+    width: 100%; background: var(--navy); color: white;
+    border: none; padding: 14px; border-radius: 10px;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+  }
+  .login-box .login-btn:hover { background: var(--navy2); }
+  .login-error { color: var(--red); font-size: 14px; margin: 8px 0; min-height: 20px; }
+
+  /* ===== MAIN ADMIN ===== */
+  #adminApp { display: none; }
+  .admin-layout {
+    max-width: 1200px; margin: 0 auto;
+    padding: 28px 24px; display: grid;
+    grid-template-columns: 260px 1fr; gap: 24px;
+    min-height: calc(100vh - 64px);
+  }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    background: white; border-radius: 14px;
+    box-shadow: var(--shadow); overflow: hidden;
+    height: fit-content; position: sticky; top: 88px;
+  }
+  .sidebar-title {
+    background: var(--navy); color: var(--gold);
+    padding: 14px 20px; font-weight: 700; font-size: 15px;
+  }
+  .cat-list { padding: 8px 0; max-height: 70vh; overflow-y: auto; }
+  .cat-item {
+    padding: 10px 20px; cursor: pointer; font-size: 14px;
+    transition: background 0.15s; border-left: 3px solid transparent;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .cat-item:hover { background: #f0f4ff; }
+  .cat-item.active { background: #E3F2FD; border-left-color: var(--blue); font-weight: 700; color: var(--blue); }
+  .cat-item .badge { margin-left: auto; background: #e8eaf0; color: #666; font-size: 11px; padding: 2px 6px; border-radius: 10px; }
+
+  /* ===== CONTENT ===== */
+  .admin-content { min-width: 0; }
+
+  /* ===== TOOLBAR ===== */
+  .toolbar {
+    background: white; border-radius: 12px;
+    padding: 16px 20px; margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .toolbar h2 { flex: 1; font-size: 20px; color: var(--navy); }
+
+  /* ===== STATS CARDS ===== */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px;
+  }
+  .stat-card {
+    background: white; border-radius: 12px;
+    padding: 20px; box-shadow: var(--shadow);
+    text-align: center; border-top: 4px solid var(--blue);
+  }
+  .stat-card .num { font-size: 32px; font-weight: 800; color: var(--navy); }
+  .stat-card .lbl { font-size: 13px; color: #666; margin-top: 4px; }
+
+  /* ===== SECTION EDITOR ===== */
+  .section-card {
+    background: white; border-radius: 12px;
+    margin-bottom: 20px; box-shadow: var(--shadow); overflow: hidden;
+  }
+  .section-card-header {
+    padding: 14px 20px; display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid #f0f2f8;
+  }
+  .section-card-header h3 { flex: 1; font-size: 16px; color: var(--navy); }
+  .doc-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 20px; border-bottom: 1px solid #f8f8ff;
+    transition: background 0.15s;
+  }
+  .doc-row:hover { background: #f8f9ff; }
+  .doc-row:last-child { border-bottom: none; }
+  .doc-row-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #f0f4ff; color: var(--blue);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 8px;
+  }
+  .doc-row-fields { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .doc-row-fields input {
+    padding: 8px 12px; border: 1.5px solid #dde1f0; border-radius: 8px;
+    font-size: 13px; outline: none; transition: border 0.2s; width: 100%;
+  }
+  .doc-row-fields input:focus { border-color: var(--blue); }
+  .doc-row-actions { display: flex; flex-direction: column; gap: 4px; padding-top: 4px; }
+  .add-doc-row {
+    padding: 10px 20px; border-top: 1px dashed #e0e4f0;
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  /* ===== FAQ EDITOR ===== */
+  .faq-row {
+    padding: 12px 20px; border-bottom: 1px solid #f8f8ff;
+  }
+  .faq-row textarea {
+    width: 100%; padding: 8px 12px; border: 1.5px solid #dde1f0;
+    border-radius: 8px; font-size: 13px; outline: none;
+    font-family: inherit; resize: vertical; min-height: 48px;
+    transition: border 0.2s;
+  }
+  .faq-row textarea:focus { border-color: var(--blue); }
+  .faq-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+
+  /* ===== EXPORT PANEL ===== */
+  .export-panel {
+    background: white; border-radius: 12px;
+    padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow);
+  }
+  .export-panel h3 { font-size: 17px; color: var(--navy); margin-bottom: 12px; }
+  .export-panel p { color: #666; font-size: 14px; margin-bottom: 16px; line-height: 1.7; }
+  .export-panel textarea {
+    width: 100%; height: 200px; padding: 12px; border: 1.5px solid #dde1f0;
+    border-radius: 8px; font-family: monospace; font-size: 12px;
+    outline: none; background: #f8f9ff; color: #333; resize: vertical;
+  }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: #1a2d6b; color: white;
+    padding: 14px 22px; border-radius: 10px;
+    font-size: 14px; font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s; z-index: 9999;
+    border-left: 4px solid var(--gold);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 500; display: none; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: white; border-radius: 14px; padding: 32px;
+    width: 500px; max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  }
+  .modal-box h3 { font-size: 18px; color: var(--navy); margin-bottom: 20px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { font-size: 13px; color: #555; font-weight: 600; margin-bottom: 6px; display: block; }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid #dde1f0; border-radius: 8px;
+    font-size: 14px; font-family: inherit;
+    outline: none; transition: border 0.2s;
+  }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--blue); }
+  .modal-actions { display: flex; gap: 12px; margin-top: 20px; }
+
+  @media (max-width: 768px) {
+    .admin-layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; }
+    .doc-row-fields { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr; }
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="logo">👮</div>
+    <h2>ระบบจัดการข้อมูล</h2>
+    <p>คู่มือตำรวจจราจร — กองบังคับการตำรวจจราจร  กองบัญชาการตำรวจนครบาล</p>
+    <input type="password" id="passInput" placeholder="รหัสผ่าน Admin" onkeyup="if(event.key==='Enter')login()">
+    <div class="login-error" id="loginError"></div>
+    <button class="login-btn" onclick="login()">🔓 เข้าสู่ระบบ</button>
+    <p style="margin-top:16px;font-size:12px;color:#999">รหัสผ่านเริ่มต้น: <strong>5454</strong></p>
+  </div>
+</div>
+
+<!-- ===== ADMIN APP ===== -->
+<div id="adminApp">
+  <header>
+    <div class="header-inner">
+      <h1>⚙️ Admin Panel — <span>คู่มือตำรวจจราจร</span></h1>
+      <button class="btn btn-gold" onclick="saveAllData()">💾 บันทึกทั้งหมด</button>
+      <button class="btn btn-outline" onclick="showExport()">📤 Export</button>
+      <button class="btn btn-outline" onclick="goHome()">🏠 ดูเว็บ</button>
+      <button class="btn btn-outline" onclick="logout()">🚪 ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="admin-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-title">📂 หมวดหมู่</div>
+      <div class="cat-list" id="catList"></div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="admin-content" id="adminContent">
+      <!-- DEFAULT: DASHBOARD -->
+      <div id="dashView">
+        <div class="toolbar"><h2>📊 ภาพรวม</h2></div>
+        <div class="stats-row" id="dashStats"></div>
+        <div class="export-panel" id="importPanel">
+          <h3>📥 นำเข้าข้อมูล (Import data.js)</h3>
+          <p>วางข้อมูล JSON จากไฟล์ data.js เพื่ออัปเดตข้อมูลทั้งหมด จากนั้นกดปุ่มนำเข้า</p>
+          <textarea id="importArea" placeholder='วาง JSON array ที่นี่เช่น [{"id":"pinai","title":"ปรับเป็นพินัย",...}]'></textarea>
+          <div style="margin-top:12px;display:flex;gap:12px">
+            <button class="btn btn-blue" onclick="doImport()">📥 นำเข้าข้อมูล</button>
+            <button class="btn btn-gold" onclick="resetToDefault()">🔄 รีเซ็ตเป็นข้อมูลเริ่มต้น</button>
+          </div>
+        </div>
+      </div>
+      <!-- CATEGORY EDITOR -->
+      <div id="catEditor" style="display:none"></div>
+      <!-- EXPORT VIEW -->
+      <div id="exportView" style="display:none">
+        <div class="toolbar"><h2>📤 Export ข้อมูล</h2></div>
+        <div class="export-panel">
+          <h3>คัดลอกข้อมูล JSON เพื่ออัปเดตไฟล์ data.js</h3>
+          <p>คัดลอกข้อความด้านล่างนี้ แล้วแทนที่ส่วน <code>const CATEGORIES = [...]</code> ในไฟล์ <strong>data.js</strong><br>
+          เพื่อบันทึกการเปลี่ยนแปลงถาวร (ข้อมูลใน localStorage จะหายเมื่อล้างแคชเบราว์เซอร์)</p>
+          <textarea id="exportArea" readonly onclick="this.select()"></textarea>
+          <div style="margin-top:12px;display:flex;gap:12px">
+            <button class="btn btn-blue" onclick="copyExport()">📋 คัดลอก</button>
+            <button class="btn btn-green" onclick="downloadExport()">⬇️ ดาวน์โหลด data.js</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD SECTION MODAL -->
+<div class="modal-overlay" id="addSectionModal">
+  <div class="modal-box">
+    <h3>➕ เพิ่มหมวดย่อยใหม่</h3>
+    <div class="form-group">
+      <label>ชื่อหมวดย่อย</label>
+      <input type="text" id="newSecTitle" placeholder="เช่น ประกาศสำนักนายกรัฐมนตรี">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-blue" onclick="confirmAddSection()">เพิ่ม</button>
+      <button class="btn" style="background:#eee" onclick="closeModal('addSectionModal')">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD FAQ MODAL -->
+<div class="modal-overlay" id="addFaqModal">
+  <div class="modal-box">
+    <h3>➕ เพิ่มคำถาม FAQ ใหม่</h3>
+    <div class="form-group">
+      <label>คำถาม</label>
+      <input type="text" id="newFaqQ" placeholder="พิมพ์คำถาม...">
+    </div>
+    <div class="form-group">
+      <label>คำตอบ</label>
+      <textarea id="newFaqA" rows="4" placeholder="พิมพ์คำตอบ..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-blue" onclick="confirmAddFaq()">เพิ่ม</button>
+      <button class="btn" style="background:#eee" onclick="closeModal('addFaqModal')">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script>
+// ===== STATE =====
+let adminData = null;
+let currentCatId = null;
+let addSectionTargetCat = null;
+let addFaqTargetCat = null;
+
+// ===== LOGIN =====
+function login() {
+  const pass = document.getElementById('passInput').value;
+  if (pass === SITE_CONFIG.adminPassword) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminApp').style.display = 'block';
+    adminData = JSON.parse(JSON.stringify(loadData()));
+    buildSidebar();
+    showDashboard();
+  } else {
+    document.getElementById('loginError').textContent = '❌ รหัสผ่านไม่ถูกต้อง';
+    document.getElementById('passInput').value = '';
+  }
+}
+
+function logout() {
+  if (confirm('ออกจากระบบ? การเปลี่ยนแปลงที่ยังไม่ได้บันทึกจะหายไป')) {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('adminApp').style.display = 'none';
+    document.getElementById('passInput').value = '';
+  }
+}
+
+// ===== BUILD SIDEBAR =====
+function buildSidebar() {
+  const list = document.getElementById('catList');
+  list.innerHTML = `
+    <div class="cat-item ${!currentCatId ? 'active' : ''}" onclick="showDashboard()">
+      📊 ภาพรวม
+    </div>
+  `;
+  adminData.forEach(cat => {
+    const docCount = cat.sections.reduce((a, s) => a + s.docs.length, 0);
+    const item = document.createElement('div');
+    item.className = 'cat-item' + (currentCatId === cat.id ? ' active' : '');
+    item.innerHTML = `<span>${cat.icon}</span> ${cat.title} <span class="badge">${docCount}</span>`;
+    item.onclick = () => editCat(cat.id);
+    list.appendChild(item);
+  });
+}
+
+// ===== DASHBOARD =====
+function showDashboard() {
+  currentCatId = null;
+  buildSidebar();
+  document.getElementById('dashView').style.display = 'block';
+  document.getElementById('catEditor').style.display = 'none';
+  document.getElementById('exportView').style.display = 'none';
+
+  let totalDocs = 0, totalSecs = 0;
+  adminData.forEach(c => { c.sections.forEach(s => { totalSecs++; totalDocs += s.docs.length; }); });
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card" style="border-top-color:#0D1B4B">
+      <div class="num">${adminData.length}</div><div class="lbl">หมวดหมู่</div>
+    </div>
+    <div class="stat-card" style="border-top-color:#1565C0">
+      <div class="num">${totalSecs}</div><div class="lbl">หมวดย่อย</div>
+    </div>
+    <div class="stat-card" style="border-top-color:#C9A84C">
+      <div class="num">${totalDocs}</div><div class="lbl">เอกสารทั้งหมด</div>
+    </div>
+  `;
+}
+
+// ===== EDIT CATEGORY =====
+function editCat(catId) {
+  currentCatId = catId;
+  buildSidebar();
+  const cat = adminData.find(c => c.id === catId);
+  if (!cat) return;
+
+  document.getElementById('dashView').style.display = 'none';
+  document.getElementById('catEditor').style.display = 'block';
+  document.getElementById('exportView').style.display = 'none';
+
+  const editor = document.getElementById('catEditor');
+  editor.innerHTML = `
+    <div class="toolbar">
+      <h2>${cat.icon} ${cat.title}</h2>
+      <button class="btn btn-blue btn-sm" onclick="openAddSectionModal('${catId}')">➕ เพิ่มหมวดย่อย</button>
+      ${cat.faq !== undefined ? `<button class="btn btn-orange btn-sm" onclick="openAddFaqModal('${catId}')">❓ เพิ่ม FAQ</button>` : ''}
+    </div>
+
+    <!-- Category Info -->
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="section-card-header">
+        <h3>📌 ข้อมูลหมวดหมู่</h3>
+      </div>
+      <div style="padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label style="font-size:12px;color:#888;font-weight:600;display:block;margin-bottom:4px">ไอคอน (Emoji)</label>
+          <input type="text" value="${cat.icon}" onchange="updateCatField('${catId}','icon',this.value)" style="padding:8px 12px;border:1.5px solid #dde1f0;border-radius:8px;font-size:20px;width:80px">
+        </div>
+        <div class="form-group">
+          <label style="font-size:12px;color:#888;font-weight:600;display:block;margin-bottom:4px">สี (Hex Color)</label>
+          <input type="color" value="${cat.color}" onchange="updateCatField('${catId}','color',this.value)" style="padding:4px;border:1.5px solid #dde1f0;border-radius:8px;height:38px;width:80px">
+        </div>
+        <div class="form-group" style="grid-column:span 2">
+          <label style="font-size:12px;color:#888;font-weight:600;display:block;margin-bottom:4px">คำอธิบาย</label>
+          <input type="text" value="${cat.description}" onchange="updateCatField('${catId}','description',this.value)" style="padding:8px 12px;border:1.5px solid #dde1f0;border-radius:8px;font-size:14px;width:100%">
+        </div>
+      </div>
+    </div>
+
+    <!-- Sections -->
+    ${cat.sections.map((sec, si) => `
+      <div class="section-card" id="secCard-${si}">
+        <div class="section-card-header">
+          <h3>📁 ${sec.title}</h3>
+          <input type="text" value="${sec.title}" placeholder="ชื่อหมวดย่อย"
+            onchange="updateSecTitle('${catId}',${si},this.value)"
+            style="padding:6px 12px;border:1.5px solid #dde1f0;border-radius:8px;font-size:14px;flex:1;max-width:400px">
+          <button class="btn btn-red btn-sm" onclick="deleteSec('${catId}',${si})">🗑️ ลบหมวดย่อย</button>
+        </div>
+        ${sec.docs.map((doc, di) => `
+          <div class="doc-row" id="docRow-${si}-${di}">
+            <div class="doc-row-num">${di + 1}</div>
+            <div class="doc-row-fields">
+              <input type="text" value="${escHtml(doc.title)}" placeholder="ชื่อเอกสาร"
+                onchange="updateDoc('${catId}',${si},${di},'title',this.value)">
+              <input type="url" value="${escHtml(doc.url)}" placeholder="URL ลิงก์ Google Drive..."
+                onchange="updateDoc('${catId}',${si},${di},'url',this.value)">
+            </div>
+            <div class="doc-row-actions">
+              <button class="btn btn-red btn-sm" onclick="deleteDoc('${catId}',${si},${di})">🗑️</button>
+            </div>
+          </div>
+        `).join('')}
+        <div class="add-doc-row">
+          <button class="btn btn-green btn-sm" onclick="addDoc('${catId}',${si})">➕ เพิ่มเอกสาร</button>
+        </div>
+      </div>
+    `).join('')}
+
+    ${cat.faq && cat.faq.length > 0 ? `
+    <div class="section-card">
+      <div class="section-card-header">
+        <h3>❓ คำถามที่พบบ่อย (FAQ)</h3>
+        <button class="btn btn-orange btn-sm" onclick="openAddFaqModal('${catId}')">➕ เพิ่มคำถาม</button>
+      </div>
+      ${cat.faq.map((f, fi) => `
+        <div class="faq-row">
+          <div style="display:flex;gap:8px;align-items:flex-start">
+            <div style="flex:1">
+              <div class="faq-label">คำถาม ${fi+1}</div>
+              <textarea rows="2" onchange="updateFaq('${catId}',${fi},'q',this.value)">${escHtml(f.q)}</textarea>
+              <div class="faq-label" style="margin-top:8px">คำตอบ</div>
+              <textarea rows="3" onchange="updateFaq('${catId}',${fi},'a',this.value)">${escHtml(f.a)}</textarea>
+            </div>
+            <button class="btn btn-red btn-sm" onclick="deleteFaq('${catId}',${fi})" style="margin-top:4px">🗑️</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>` : ''}
+  `;
+}
+
+// ===== HELPERS =====
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function updateCatField(catId, field, val) {
+  const cat = adminData.find(c => c.id === catId);
+  if (cat) { cat[field] = val; toast('✅ อัปเดตแล้ว'); }
+}
+
+function updateSecTitle(catId, si, val) {
+  const cat = adminData.find(c => c.id === catId);
+  if (cat) { cat.sections[si].title = val; toast('✅ อัปเดตชื่อหมวดย่อย'); }
+}
+
+function updateDoc(catId, si, di, field, val) {
+  const cat = adminData.find(c => c.id === catId);
+  if (cat) { cat.sections[si].docs[di][field] = val; }
+}
+
+function updateFaq(catId, fi, field, val) {
+  const cat = adminData.find(c => c.id === catId);
+  if (cat && cat.faq) { cat.faq[fi][field] = val; }
+}
+
+function deleteDoc(catId, si, di) {
+  if (!confirm('ลบเอกสารนี้?')) return;
+  const cat = adminData.find(c => c.id === catId);
+  if (cat) { cat.sections[si].docs.splice(di, 1); editCat(catId); toast('🗑️ ลบเอกสารแล้ว'); }
+}
+
+function deleteSec(catId, si) {
+  if (!confirm('ลบหมวดย่อยนี้และเอกสารทั้งหมด?')) return;
+  const cat = adminData.find(c => c.id === catId);
+  if (cat) { cat.sections.splice(si, 1); editCat(catId); toast('🗑️ ลบหมวดย่อยแล้ว'); }
+}
+
+function deleteFaq(catId, fi) {
+  if (!confirm('ลบคำถามนี้?')) return;
+  const cat = adminData.find(c => c.id === catId);
+  if (cat && cat.faq) { cat.faq.splice(fi, 1); editCat(catId); toast('🗑️ ลบคำถามแล้ว'); }
+}
+
+function addDoc(catId, si) {
+  const cat = adminData.find(c => c.id === catId);
+  if (cat) {
+    cat.sections[si].docs.push({ title: 'เอกสารใหม่', url: '' });
+    editCat(catId);
+    toast('➕ เพิ่มเอกสารแล้ว');
+  }
+}
+
+// ===== ADD SECTION =====
+function openAddSectionModal(catId) {
+  addSectionTargetCat = catId;
+  document.getElementById('newSecTitle').value = '';
+  document.getElementById('addSectionModal').classList.add('open');
+  setTimeout(() => document.getElementById('newSecTitle').focus(), 100);
+}
+
+function confirmAddSection() {
+  const title = document.getElementById('newSecTitle').value.trim();
+  if (!title) return;
+  const cat = adminData.find(c => c.id === addSectionTargetCat);
+  if (cat) {
+    cat.sections.push({ title, docs: [] });
+    closeModal('addSectionModal');
+    editCat(addSectionTargetCat);
+    toast('✅ เพิ่มหมวดย่อยแล้ว');
+  }
+}
+
+// ===== ADD FAQ =====
+function openAddFaqModal(catId) {
+  addFaqTargetCat = catId;
+  document.getElementById('newFaqQ').value = '';
+  document.getElementById('newFaqA').value = '';
+  document.getElementById('addFaqModal').classList.add('open');
+  setTimeout(() => document.getElementById('newFaqQ').focus(), 100);
+}
+
+function confirmAddFaq() {
+  const q = document.getElementById('newFaqQ').value.trim();
+  const a = document.getElementById('newFaqA').value.trim();
+  if (!q || !a) return;
+  const cat = adminData.find(c => c.id === addFaqTargetCat);
+  if (cat) {
+    if (!cat.faq) cat.faq = [];
+    cat.faq.push({ q, a });
+    closeModal('addFaqModal');
+    editCat(addFaqTargetCat);
+    toast('✅ เพิ่มคำถาม FAQ แล้ว');
+  }
+}
+
+// ===== SAVE =====
+function saveAllData() {
+  saveData(adminData);
+  buildSidebar();
+  toast('💾 บันทึกข้อมูลสำเร็จ!');
+}
+
+// ===== EXPORT =====
+function showExport() {
+  currentCatId = null;
+  buildSidebar();
+  document.getElementById('dashView').style.display = 'none';
+  document.getElementById('catEditor').style.display = 'none';
+  document.getElementById('exportView').style.display = 'block';
+  document.getElementById('exportArea').value = JSON.stringify(adminData, null, 2);
+}
+
+function copyExport() {
+  document.getElementById('exportArea').select();
+  document.execCommand('copy');
+  toast('📋 คัดลอกแล้ว!');
+}
+
+function downloadExport() {
+  const json = JSON.stringify(adminData, null, 2);
+  const content = `// ============================================================
+// data.js — ฐานข้อมูลเอกสารและเนื้อหาของคู่มือตำรวจจราจร
+// อัปเดตโดย Admin Panel — ${new Date().toLocaleDateString('th-TH')}
+// ============================================================
+
+const SITE_CONFIG = ${JSON.stringify(SITE_CONFIG, null, 2)};
+
+const CATEGORIES = ${json};
+
+function loadData() {
+  const saved = localStorage.getItem('trafficPoliceData');
+  if (saved) { try { return JSON.parse(saved); } catch(e) { return CATEGORIES; } }
+  return CATEGORIES;
+}
+function saveData(data) { localStorage.setItem('trafficPoliceData', JSON.stringify(data)); }
+`;
+  const blob = new Blob([content], { type: 'text/javascript' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'data.js';
+  a.click();
+  toast('⬇️ ดาวน์โหลดไฟล์ data.js แล้ว');
+}
+
+// ===== IMPORT =====
+function doImport() {
+  const txt = document.getElementById('importArea').value.trim();
+  if (!txt) { alert('กรุณาวางข้อมูล JSON ก่อน'); return; }
+  try {
+    const parsed = JSON.parse(txt);
+    if (!Array.isArray(parsed)) throw new Error('ต้องเป็น Array');
+    adminData = parsed;
+    saveData(adminData);
+    buildSidebar();
+    showDashboard();
+    toast('✅ นำเข้าข้อมูลสำเร็จ!');
+  } catch(e) {
+    alert('ข้อมูล JSON ไม่ถูกต้อง: ' + e.message);
+  }
+}
+
+function resetToDefault() {
+  if (!confirm('รีเซ็ตกลับเป็นข้อมูลเริ่มต้น? การเปลี่ยนแปลงทั้งหมดจะหายไป')) return;
+  localStorage.removeItem('trafficPoliceData');
+  adminData = JSON.parse(JSON.stringify(CATEGORIES));
+  buildSidebar();
+  showDashboard();
+  toast('🔄 รีเซ็ตข้อมูลสำเร็จ');
+}
+
+// ===== UTILS =====
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function goHome() { window.open('index.html', '_blank'); }
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+});
+</script>
+</body>
+</html>
