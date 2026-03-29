@@ -584,6 +584,7 @@
     <div class="stat-item"><div class="num" id="statCat">0</div><div class="label">หมวดหมู่</div></div>
     <div class="stat-item"><div class="num" id="statDoc">0</div><div class="label">เอกสาร</div></div>
     <div class="stat-item"><div class="num" id="statSec">0</div><div class="label">หมวดย่อย</div></div>
+    <div class="stat-item"><div class="num" id="statVisitors">—</div><div class="label">ผู้เข้าชม</div></div>
   </div>
 </section>
 
@@ -659,12 +660,16 @@
 <div class="modal-overlay" id="adminModal">
   <div class="modal-box">
     <h3>🔐 เข้าสู่ระบบผู้ดูแล</h3>
-    <p style="color:#666;margin-bottom:16px;font-size:14px;">กรุณาใส่รหัสผ่านเพื่อเข้าสู่ระบบจัดการข้อมูล</p>
-    <input type="password" id="adminPassInput" placeholder="รหัสผ่าน" onkeyup="if(event.key==='Enter') checkAdminPass()">
-    <p class="modal-error" id="passError" style="display:none">รหัสผ่านไม่ถูกต้อง</p>
+    <p style="color:#666;margin-bottom:16px;font-size:14px;">กรุณาใส่อีเมลและรหัสผ่านของผู้ดูแลระบบ</p>
+    <input type="email" id="adminEmailInput" placeholder="อีเมล" onkeyup="if(event.key==='Enter') doAdminLogin()">
+    <input type="password" id="adminPassInput" placeholder="รหัสผ่าน" onkeyup="if(event.key==='Enter') doAdminLogin()">
+    <p class="modal-error" id="passError" style="display:none">อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือบัญชียังรอการอนุมัติ</p>
     <div class="modal-actions">
-      <button class="btn-primary" onclick="checkAdminPass()">เข้าสู่ระบบ</button>
+      <button class="btn-primary" id="btnLoginSubmit" onclick="doAdminLogin()">เข้าสู่ระบบ</button>
       <button class="btn-cancel" onclick="closeAdminModal()">ยกเลิก</button>
+    </div>
+    <div style="text-align:center;margin-top:16px;font-size:14px;color:#666;">
+      ยังไม่มีบัญชี? <a href="register.html" target="_blank" style="color:var(--blue);font-weight:600;">สมัครสมาชิก Admin</a>
     </div>
   </div>
 </div>
@@ -691,6 +696,7 @@ function updateStats() {
   document.getElementById('statCat').textContent = cats;
   document.getElementById('statDoc').textContent = docs;
   document.getElementById('statSec').textContent = secs;
+  // อัปเดตข้อความจาก SITE_CONFIG
   const creditText = 'จัดทำโดย ' + SITE_CONFIG.unit + ' (' + SITE_CONFIG.year + ')';
   const heroBadge = document.getElementById('heroBadge');
   const footerCredit = document.getElementById('footerCredit');
@@ -929,31 +935,55 @@ function doSearch() {
 // ======== ADMIN MODAL ========
 function openAdminModal() {
   document.getElementById('adminModal').classList.add('open');
+  document.getElementById('adminEmailInput').value = '';
   document.getElementById('adminPassInput').value = '';
   document.getElementById('passError').style.display = 'none';
-  setTimeout(() => document.getElementById('adminPassInput').focus(), 100);
+  setTimeout(() => document.getElementById('adminEmailInput').focus(), 100);
 }
 
 function closeAdminModal() {
   document.getElementById('adminModal').classList.remove('open');
 }
 
-function checkAdminPass() {
-  const pass = document.getElementById('adminPassInput').value;
-  if (pass === SITE_CONFIG.adminPassword) {
+async function doAdminLogin() {
+  const email = document.getElementById('adminEmailInput').value.trim();
+  const pass  = document.getElementById('adminPassInput').value;
+  const errEl = document.getElementById('passError');
+  const btn   = document.getElementById('btnLoginSubmit');
+  if (!email || !pass) { errEl.textContent = 'กรุณากรอกอีเมลและรหัสผ่าน'; errEl.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...';
+  errEl.style.display = 'none';
+  try {
+    const { loginAdmin } = await import('./auth.js');
+    const { profile } = await loginAdmin(email, pass);
     closeAdminModal();
-    window.open('admin.html', '_blank');
-  } else {
-    document.getElementById('passError').style.display = 'block';
-    document.getElementById('adminPassInput').value = '';
-    document.getElementById('adminPassInput').focus();
+    // super_admin ไปหน้าจัดการ user, อื่นๆ ไปหน้า admin ปกติ
+    if (profile.role === 'super_admin') {
+      window.open('super-admin.html', '_blank');
+    } else {
+      window.open('admin.html', '_blank');
+    }
+  } catch (e) {
+    errEl.textContent = e.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
   }
 }
 
-// Close modal on overlay click
 document.getElementById('adminModal').addEventListener('click', function(e) {
   if (e.target === this) closeAdminModal();
 });
+</script>
+
+<!-- Firebase Visitor Counter -->
+<script type="module">
+  import { trackVisit, subscribeVisitorCount } from './visitor-counter.js';
+  trackVisit();
+  subscribeVisitorCount(count => {
+    const el = document.getElementById('statVisitors');
+    if (el) el.textContent = count.toLocaleString('th-TH');
+  });
 </script>
 </body>
 </html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สมัครสมาชิก Admin — คู่มือตำรวจจราจร</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0D1B4B; --navy2: #1a2d6b; --gold: #C9A84C;
+    --blue: #1565C0; --green: #2E7D32; --red: #C62828;
+    --gray: #f5f6fa; --text: #1a1a2e; --text2: #4a4a6a;
+  }
+  body {
+    font-family: 'Sarabun', Arial, sans-serif;
+    background: linear-gradient(135deg, var(--navy) 0%, #1e3a8a 100%);
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    background: white;
+    border-radius: 20px;
+    padding: 48px 40px;
+    width: 520px; max-width: 100%;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+  }
+  .card-header { text-align: center; margin-bottom: 32px; }
+  .card-header .icon { font-size: 52px; margin-bottom: 12px; }
+  .card-header h1 { font-size: 24px; color: var(--navy); font-weight: 800; }
+  .card-header p { color: var(--text2); font-size: 14px; margin-top: 6px; line-height: 1.6; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 12px 14px;
+    border: 1.5px solid #dde1f0; border-radius: 10px;
+    font-size: 15px; font-family: inherit; outline: none;
+    transition: border 0.2s; color: var(--text);
+    background: white;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--blue); }
+  .form-group input.error { border-color: var(--red); }
+
+  .divider { border: none; border-top: 1px solid #e8eaf0; margin: 20px 0; }
+
+  .btn-submit {
+    width: 100%; background: var(--navy); color: white;
+    border: none; padding: 14px; border-radius: 10px;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    font-family: inherit; transition: background 0.2s; margin-top: 8px;
+  }
+  .btn-submit:hover { background: var(--navy2); }
+  .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .alert {
+    padding: 12px 16px; border-radius: 8px;
+    font-size: 14px; margin-bottom: 16px; display: none;
+  }
+  .alert-error { background: #ffebee; color: var(--red); border: 1px solid #ffcdd2; }
+  .alert-success { background: #e8f5e9; color: var(--green); border: 1px solid #c8e6c9; }
+
+  .back-link {
+    text-align: center; margin-top: 20px; font-size: 14px; color: var(--text2);
+  }
+  .back-link a { color: var(--blue); font-weight: 600; }
+
+  /* Success Screen */
+  #successScreen { display: none; text-align: center; }
+  #successScreen .check { font-size: 72px; margin-bottom: 16px; }
+  #successScreen h2 { font-size: 22px; color: var(--green); margin-bottom: 12px; }
+  #successScreen p { color: var(--text2); font-size: 15px; line-height: 1.7; }
+  #successScreen .btn-home {
+    display: inline-block; margin-top: 24px;
+    background: var(--navy); color: white;
+    padding: 12px 32px; border-radius: 10px;
+    text-decoration: none; font-weight: 700;
+  }
+
+  .note-box {
+    background: #fff8e1; border: 1px solid #ffe082;
+    border-radius: 8px; padding: 12px 16px;
+    font-size: 13px; color: #5d4037;
+    margin-bottom: 20px; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- REGISTER FORM -->
+  <div id="registerForm">
+    <div class="card-header">
+      <div class="icon">👮</div>
+      <h1>สมัครสมาชิก Admin</h1>
+      <p>คู่มือตำรวจจราจร — กองบังคับการตำรวจจราจร<br>กองบัญชาการตำรวจนครบาล</p>
+    </div>
+
+    <div class="note-box">
+      ⚠️ หลังสมัครแล้ว บัญชีของท่านจะ<strong>รอการอนุมัติจากผู้ดูแลระบบ</strong> ก่อนเข้าใช้งานได้
+    </div>
+
+    <div id="alertError" class="alert alert-error"></div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>ยศ</label>
+        <select id="rank">
+          <option value="">-- เลือกยศ --</option>
+          <option>พลตำรวจ</option>
+          <option>สิบตำรวจตรี</option>
+          <option>สิบตำรวจโท</option>
+          <option>สิบตำรวจเอก</option>
+          <option>จ่าสิบตำรวจ</option>
+          <option>ดาบตำรวจ</option>
+          <option>ร้อยตำรวจตรี</option>
+          <option>ร้อยตำรวจโท</option>
+          <option>ร้อยตำรวจเอก</option>
+          <option>พันตำรวจตรี</option>
+          <option>พันตำรวจโท</option>
+          <option>พันตำรวจเอก</option>
+          <option>พลตำรวจตรี</option>
+          <option>พลตำรวจโท</option>
+          <option>พลตำรวจเอก</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>ชื่อ-นามสกุล <span style="color:red">*</span></label>
+        <input type="text" id="name" placeholder="ชื่อ นามสกุล">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>สังกัด / หน่วยงาน <span style="color:red">*</span></label>
+      <input type="text" id="department" placeholder="เช่น บก.จร. / สน.ลุมพินี">
+    </div>
+
+    <hr class="divider">
+
+    <div class="form-group">
+      <label>อีเมล <span style="color:red">*</span></label>
+      <input type="email" id="email" placeholder="example@police.go.th">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>รหัสผ่าน <span style="color:red">*</span></label>
+        <input type="password" id="password" placeholder="อย่างน้อย 8 ตัวอักษร">
+      </div>
+      <div class="form-group">
+        <label>ยืนยันรหัสผ่าน <span style="color:red">*</span></label>
+        <input type="password" id="confirmPassword" placeholder="กรอกรหัสผ่านอีกครั้ง">
+      </div>
+    </div>
+
+    <button class="btn-submit" id="btnRegister" onclick="doRegister()">สมัครสมาชิก</button>
+
+    <div class="back-link">
+      มีบัญชีแล้ว? <a href="index.html">กลับหน้าหลัก</a>
+    </div>
+  </div>
+
+  <!-- SUCCESS SCREEN -->
+  <div id="successScreen">
+    <div class="check">✅</div>
+    <h2>สมัครสมาชิกสำเร็จ!</h2>
+    <p>
+      ระบบได้รับคำขอของท่านแล้ว<br>
+      <strong>กรุณารอการอนุมัติจากผู้ดูแลระบบ</strong><br><br>
+      เมื่อได้รับการอนุมัติแล้ว ท่านจะสามารถเข้าสู่ระบบได้ทันที
+    </p>
+    <a href="index.html" class="btn-home">กลับหน้าหลัก</a>
+  </div>
+
+</div>
+
+<script type="module">
+  import { registerAdmin } from './auth.js';
+
+  window.doRegister = async function() {
+    const rank       = document.getElementById('rank').value.trim();
+    const name       = document.getElementById('name').value.trim();
+    const department = document.getElementById('department').value.trim();
+    const email      = document.getElementById('email').value.trim();
+    const password   = document.getElementById('password').value;
+    const confirm    = document.getElementById('confirmPassword').value;
+    const errEl      = document.getElementById('alertError');
+    const btn        = document.getElementById('btnRegister');
+
+    errEl.style.display = 'none';
+
+    if (!name || !department || !email || !password || !confirm) {
+      errEl.textContent = 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน'; errEl.style.display = 'block'; return;
+    }
+    if (password.length < 8) {
+      errEl.textContent = 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'; errEl.style.display = 'block'; return;
+    }
+    if (password !== confirm) {
+      errEl.textContent = 'รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน'; errEl.style.display = 'block'; return;
+    }
+
+    btn.disabled = true; btn.textContent = 'กำลังดำเนินการ...';
+    try {
+      await registerAdmin(email, password, name, department, rank);
+      document.getElementById('registerForm').style.display = 'none';
+      document.getElementById('successScreen').style.display = 'block';
+    } catch(e) {
+      let msg = e.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+      if (e.code === 'auth/email-already-in-use') msg = 'อีเมลนี้ถูกใช้งานแล้ว';
+      if (e.code === 'auth/invalid-email')        msg = 'รูปแบบอีเมลไม่ถูกต้อง';
+      errEl.textContent = msg; errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'สมัครสมาชิก';
+    }
+  };
+</script>
+</body>
+</html>
