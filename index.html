@@ -957,9 +957,9 @@ async function doAdminLogin() {
     closeAdminModal();
     // super_admin ไปหน้าจัดการ user, อื่นๆ ไปหน้า admin ปกติ
     if (profile.role === 'super_admin') {
-      window.open('super-admin.html', '_blank');
+      window.location.href = 'super-admin.html';
     } else {
-      window.open('admin.html', '_blank');
+      window.location.href = 'admin.html';
     }
   } catch (e) {
     errEl.textContent = e.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
