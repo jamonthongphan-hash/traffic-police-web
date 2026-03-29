@@ -546,7 +546,6 @@
 <!-- TOP BAR -->
 <div class="topbar">
   <span>🏛️ กองบังคับการตำรวจจราจร  กองบัญชาการตำรวจนครบาล</span>
-  <a href="admin.html" target="_blank">⚙️ เข้าสู่ระบบ Admin</a>
 </div>
 
 <!-- HEADER -->
@@ -584,7 +583,6 @@
     <div class="stat-item"><div class="num" id="statCat">0</div><div class="label">หมวดหมู่</div></div>
     <div class="stat-item"><div class="num" id="statDoc">0</div><div class="label">เอกสาร</div></div>
     <div class="stat-item"><div class="num" id="statSec">0</div><div class="label">หมวดย่อย</div></div>
-    <div class="stat-item"><div class="num" id="statVisitors">—</div><div class="label">ผู้เข้าชม</div></div>
   </div>
 </section>
 
@@ -629,6 +627,7 @@
       <p>แหล่งรวมความรู้สำหรับตำรวจสายงานจราจร<br>
       กฎหมาย ระเบียบ คำสั่ง และแนวทางปฏิบัติงาน<br>
       <span id="footerCredit"></span></p>
+      <p style="margin-top:8px;font-size:14px;color:rgba(255,255,255,0.75)">👁️ ผู้เข้าชมทั้งหมด: <strong id="statVisitors" style="color:var(--gold)">—</strong> ครั้ง</p>
     </div>
     <div class="footer-col">
       <h4>ลิงก์ด่วน</h4>
@@ -647,7 +646,6 @@
         <li><a href="#" onclick="showCat('prs')">อบถ.ตร. (PRS)</a></li>
         <li><a href="#" onclick="showCat('points')">ระบบตัดคะแนน</a></li>
         <li><a href="#" onclick="showCat('finance')">ระเบียบการเงิน</a></li>
-        <li><a href="admin.html" target="_blank">⚙️ Admin Panel</a></li>
       </ul>
     </div>
   </div>
@@ -697,7 +695,7 @@ function updateStats() {
   document.getElementById('statDoc').textContent = docs;
   document.getElementById('statSec').textContent = secs;
   // อัปเดตข้อความจาก SITE_CONFIG
-  const creditText = 'จัดทำโดย ' + SITE_CONFIG.unit + ' (' + SITE_CONFIG.year + ')';
+  const creditText = 'จัดทำโดย ' + SITE_CONFIG.unit + ' และ คณะ';
   const heroBadge = document.getElementById('heroBadge');
   const footerCredit = document.getElementById('footerCredit');
   if (heroBadge) heroBadge.textContent = creditText;
