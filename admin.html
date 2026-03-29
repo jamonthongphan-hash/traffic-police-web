@@ -237,10 +237,13 @@
     <div class="logo">👮</div>
     <h2>ระบบจัดการข้อมูล</h2>
     <p>คู่มือตำรวจจราจร — กองบังคับการตำรวจจราจร  กองบัญชาการตำรวจนครบาล</p>
-    <input type="password" id="passInput" placeholder="รหัสผ่าน Admin" onkeyup="if(event.key==='Enter')login()">
+    <input type="email" id="loginEmail" placeholder="อีเมล" onkeyup="if(event.key==='Enter')doFirebaseLogin()" style="text-align:left">
+    <input type="password" id="loginPass" placeholder="รหัสผ่าน" onkeyup="if(event.key==='Enter')doFirebaseLogin()">
     <div class="login-error" id="loginError"></div>
-    <button class="login-btn" onclick="login()">🔓 เข้าสู่ระบบ</button>
-    <p style="margin-top:16px;font-size:12px;color:#999">รหัสผ่านเริ่มต้น: <strong>5454</strong></p>
+    <button class="login-btn" id="btnLogin" onclick="doFirebaseLogin()">🔓 เข้าสู่ระบบ</button>
+    <p style="margin-top:16px;font-size:13px;color:#666">
+      ยังไม่มีบัญชี? <a href="register.html" style="color:var(--blue);font-weight:600">สมัครสมาชิก</a>
+    </p>
   </div>
 </div>
 
@@ -249,8 +252,10 @@
   <header>
     <div class="header-inner">
       <h1>⚙️ Admin Panel — <span>คู่มือตำรวจจราจร</span></h1>
+      <span id="userInfo"></span>
       <button class="btn btn-gold" onclick="saveAllData()">💾 บันทึกทั้งหมด</button>
       <button class="btn btn-outline" onclick="showExport()">📤 Export</button>
+      <button class="btn btn-outline" id="btnSuperAdmin" style="display:none" onclick="window.open('super-admin.html','_blank')">👑 จัดการ Admin</button>
       <button class="btn btn-outline" onclick="goHome()">🏠 ดูเว็บ</button>
       <button class="btn btn-outline" onclick="logout()">🚪 ออกจากระบบ</button>
     </div>
@@ -295,6 +300,35 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CATEGORY MODAL -->
+<div class="modal-overlay" id="addCatModal">
+  <div class="modal-box" style="max-width:480px">
+    <h3>➕ เพิ่มหมวดหมู่หลักใหม่</h3>
+    <div class="form-group">
+      <label>ชื่อหมวดหมู่ <span style="color:red">*</span></label>
+      <input type="text" id="newCatTitle" placeholder="เช่น กฎหมายเสียงและควันดำ">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group">
+        <label>ไอคอน (Emoji)</label>
+        <input type="text" id="newCatIcon" value="📋" style="font-size:20px;width:70px;padding:6px 10px;border:1.5px solid #dde1f0;border-radius:8px">
+      </div>
+      <div class="form-group">
+        <label>สี</label>
+        <input type="color" id="newCatColor" value="#1565C0" style="padding:4px;border:1.5px solid #dde1f0;border-radius:8px;height:38px;width:80px">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>คำอธิบาย</label>
+      <input type="text" id="newCatDesc" placeholder="เช่น กฎหมาย ระเบียบ คำสั่งเกี่ยวกับเสียงและควันดำ">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-green" onclick="confirmAddCat()">➕ เพิ่มหมวดหมู่</button>
+      <button class="btn" style="background:#eee" onclick="closeModal('addCatModal')">ยกเลิก</button>
     </div>
   </div>
 </div>
@@ -344,31 +378,68 @@ let currentCatId = null;
 let addSectionTargetCat = null;
 let addFaqTargetCat = null;
 
-// ===== LOGIN =====
-function login() {
-  const pass = document.getElementById('passInput').value;
-  if (pass === SITE_CONFIG.adminPassword) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminApp').style.display = 'block';
-    adminData = JSON.parse(JSON.stringify(loadData()));
-    buildSidebar();
-    showDashboard();
-  } else {
-    document.getElementById('loginError').textContent = '❌ รหัสผ่านไม่ถูกต้อง';
-    document.getElementById('passInput').value = '';
+// ===== STATE: current user profile =====
+let currentUserProfile = null;
+
+// ===== FIREBASE LOGIN =====
+async function doFirebaseLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  const btn   = document.getElementById('btnLogin');
+  if (!email || !pass) { errEl.textContent = '❌ กรุณากรอกอีเมลและรหัสผ่าน'; return; }
+  btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...';
+  errEl.textContent = '';
+  try {
+    const { loginAdmin } = await import('./auth.js');
+    const { profile } = await loginAdmin(email, pass);
+    currentUserProfile = profile;
+    enterAdminApp(profile);
+  } catch(e) {
+    errEl.textContent = '❌ ' + (e.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+  } finally {
+    btn.disabled = false; btn.textContent = '🔓 เข้าสู่ระบบ';
   }
 }
 
-function logout() {
-  if (confirm('ออกจากระบบ? การเปลี่ยนแปลงที่ยังไม่ได้บันทึกจะหายไป')) {
-    document.getElementById('loginScreen').style.display = 'flex';
-    document.getElementById('adminApp').style.display = 'none';
-    document.getElementById('passInput').value = '';
+function enterAdminApp(profile) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminApp').style.display = 'block';
+  // แสดงชื่อและระดับสิทธิ์ใน header
+  const { ROLE_LABELS } = window._authModule || {};
+  const roleLabel = (window._roleLabels && window._roleLabels[profile.role]) || profile.role;
+  document.getElementById('userInfo').innerHTML =
+    `<span style="color:rgba(255,255,255,0.8);font-size:13px">
+      👤 ${profile.rank ? profile.rank + ' ' : ''}${profile.name}
+      &nbsp;<span style="background:var(--gold);color:var(--navy);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">${roleLabel}</span>
+    </span>`;
+  // ซ่อนปุ่ม Super Admin สำหรับผู้ที่ไม่ใช่
+  if (profile.role === 'super_admin') {
+    document.getElementById('btnSuperAdmin').style.display = 'inline-block';
   }
+  adminData = JSON.parse(JSON.stringify(loadData()));
+  buildSidebar(profile);
+  showDashboard();
+}
+
+async function logout() {
+  if (!confirm('ออกจากระบบ?')) return;
+  try {
+    const { logoutAdmin } = await import('./auth.js');
+    await logoutAdmin();
+  } catch(e) { /* ignore */ }
+  currentUserProfile = null;
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminApp').style.display = 'none';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('userInfo').innerHTML = '';
 }
 
 // ===== BUILD SIDEBAR =====
-function buildSidebar() {
+function buildSidebar(profile) {
+  profile = profile || currentUserProfile;
+  const canAdd = profile && (profile.role === 'super_admin' || profile.role === 'admin_level3' || profile.role === 'admin_level2');
   const list = document.getElementById('catList');
   list.innerHTML = `
     <div class="cat-item ${!currentCatId ? 'active' : ''}" onclick="showDashboard()">
@@ -383,6 +454,12 @@ function buildSidebar() {
     item.onclick = () => editCat(cat.id);
     list.appendChild(item);
   });
+  if (canAdd) {
+    const addBtn = document.createElement('div');
+    addBtn.style.cssText = 'margin:10px 8px 4px 8px';
+    addBtn.innerHTML = `<button class="btn btn-green" style="width:100%;font-size:13px;padding:8px" onclick="openAddCatModal()">➕ เพิ่มหมวดหมู่ใหม่</button>`;
+    list.appendChild(addBtn);
+  }
 }
 
 // ===== DASHBOARD =====
@@ -425,6 +502,7 @@ function editCat(catId) {
       <h2>${cat.icon} ${cat.title}</h2>
       <button class="btn btn-blue btn-sm" onclick="openAddSectionModal('${catId}')">➕ เพิ่มหมวดย่อย</button>
       ${cat.faq !== undefined ? `<button class="btn btn-orange btn-sm" onclick="openAddFaqModal('${catId}')">❓ เพิ่ม FAQ</button>` : ''}
+      <button class="btn btn-red btn-sm" onclick="deleteCat('${catId}')" style="margin-left:auto">🗑️ ลบหมวดหมู่นี้</button>
     </div>
 
     <!-- Category Info -->
@@ -549,6 +627,53 @@ function addDoc(catId, si) {
     editCat(catId);
     toast('➕ เพิ่มเอกสารแล้ว');
   }
+}
+
+// ===== ADD / DELETE CATEGORY =====
+function openAddCatModal() {
+  document.getElementById('newCatTitle').value = '';
+  document.getElementById('newCatIcon').value = '📋';
+  document.getElementById('newCatColor').value = '#1565C0';
+  document.getElementById('newCatDesc').value = '';
+  document.getElementById('addCatModal').classList.add('open');
+  setTimeout(() => document.getElementById('newCatTitle').focus(), 100);
+}
+
+function confirmAddCat() {
+  const title = document.getElementById('newCatTitle').value.trim();
+  if (!title) { alert('กรุณากรอกชื่อหมวดหมู่'); return; }
+  const icon = document.getElementById('newCatIcon').value.trim() || '📋';
+  const color = document.getElementById('newCatColor').value || '#1565C0';
+  const desc = document.getElementById('newCatDesc').value.trim();
+  // สร้าง id จากชื่อ
+  const id = 'cat_' + Date.now();
+  const newCat = {
+    id,
+    icon,
+    title,
+    color,
+    description: desc,
+    sections: [],
+    faq: []
+  };
+  adminData.push(newCat);
+  saveData();
+  closeModal('addCatModal');
+  buildSidebar();
+  editCat(id);
+  toast('✅ เพิ่มหมวดหมู่ "' + title + '" แล้ว');
+}
+
+function deleteCat(catId) {
+  const cat = adminData.find(c => c.id === catId);
+  if (!cat) return;
+  if (!confirm('ลบหมวดหมู่ "' + cat.title + '" และข้อมูลทั้งหมดในนั้น?\nการกระทำนี้ไม่สามารถเลิกทำได้')) return;
+  adminData = adminData.filter(c => c.id !== catId);
+  saveData();
+  currentCatId = null;
+  buildSidebar();
+  showDashboard();
+  toast('🗑️ ลบหมวดหมู่ "' + cat.title + '" แล้ว');
 }
 
 // ===== ADD SECTION =====
@@ -684,6 +809,41 @@ function toast(msg) {
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
 });
+
+// ===== ROLE PERMISSION GUARD =====
+function requirePermission(action) {
+  const role = currentUserProfile && currentUserProfile.role;
+  const perms = {
+    super_admin:  { canEdit:true, canAdd:true, canDelete:true },
+    admin_level3: { canEdit:true, canAdd:true, canDelete:true },
+    admin_level2: { canEdit:true, canAdd:true, canDelete:true },
+    admin_level1: { canEdit:true, canAdd:false, canDelete:false }
+  };
+  if (!role || !perms[role] || !perms[role][action]) {
+    toast('⛔ คุณไม่มีสิทธิ์ดำเนินการนี้ (ระดับ: ' + (role||'ไม่ทราบ') + ')');
+    return false;
+  }
+  return true;
+}
+
+window._roleLabels = {
+  super_admin:  'Super Admin',
+  admin_level3: 'ระดับ 3 (สิทธิ์เต็ม)',
+  admin_level2: 'ระดับ 2 (เพิ่ม/แก้ไข/ลบ)',
+  admin_level1: 'ระดับ 1 (ดูและแก้ไข)',
+  pending:      'รอการอนุมัติ'
+};
+</script>
+
+<script type="module">
+  // ตรวจสอบ session login จาก Firebase เมื่อโหลดหน้า
+  import { onAuthChange } from './auth.js';
+  onAuthChange((user, profile) => {
+    if (user && profile && profile.role !== 'pending') {
+      window.currentUserProfile = profile;
+      if (typeof enterAdminApp === 'function') enterAdminApp(profile);
+    }
+  });
 </script>
 </body>
 </html>

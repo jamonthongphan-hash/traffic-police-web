@@ -1,0 +1,34 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===== ผู้เข้าชม: นับ counter ได้ =====
+    match /visitors/counter {
+      allow read:   if true;
+      allow write:  if true;  // increment only — ไม่มีข้อมูลส่วนตัว
+    }
+
+    // ===== Users =====
+    match /users/{uid} {
+      // สมัครสมาชิก: สร้าง record ตัวเองได้
+      allow create: if request.auth != null && request.auth.uid == uid;
+
+      // อ่านข้อมูลตัวเอง หรือ super_admin อ่านได้ทุกคน
+      allow read:   if request.auth != null &&
+                      (request.auth.uid == uid || isSuperAdmin());
+
+      // แก้ไขได้เฉพาะ super_admin
+      allow update: if isSuperAdmin();
+
+      // ลบได้เฉพาะ super_admin
+      allow delete: if isSuperAdmin();
+    }
+
+    // ===== Helper Functions =====
+    function isSuperAdmin() {
+      return request.auth != null &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
+    }
+
+  }
+}

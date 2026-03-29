@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Super Admin — จัดการผู้ดูแลระบบ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0D1B4B; --navy2: #1a2d6b; --gold: #C9A84C;
+    --blue: #1565C0; --green: #2E7D32; --red: #C62828;
+    --orange: #E65100; --gray: #f5f6fa; --text: #1a1a2e; --text2: #4a4a6a;
+    --shadow: 0 4px 20px rgba(13,27,75,0.10);
+  }
+  body { font-family: 'Sarabun', Arial, sans-serif; background: var(--gray); color: var(--text); }
+
+  /* LOGIN */
+  #loginScreen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--navy) 0%, #1e3a8a 100%);
+  }
+  .login-box {
+    background: white; border-radius: 16px; padding: 48px 40px;
+    width: 420px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center;
+  }
+  .login-box .icon { font-size: 52px; margin-bottom: 12px; }
+  .login-box h2 { font-size: 22px; color: var(--navy); margin-bottom: 6px; }
+  .login-box p { color: #666; font-size: 14px; margin-bottom: 24px; }
+  .login-box input {
+    width: 100%; padding: 13px 16px; border: 1.5px solid #dde1f0;
+    border-radius: 10px; font-size: 15px; margin-bottom: 14px;
+    outline: none; transition: border 0.2s; font-family: inherit; text-align: left;
+  }
+  .login-box input:focus { border-color: var(--blue); }
+  .login-btn {
+    width: 100%; background: var(--navy); color: white; border: none;
+    padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+  }
+  .login-btn:hover { background: var(--navy2); }
+  .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .login-error { color: var(--red); font-size: 13px; margin: 6px 0 10px; min-height: 18px; }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, var(--navy), var(--navy2));
+    color: white; padding: 0; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .header-inner {
+    max-width: 1200px; margin: 0 auto; padding: 0 24px;
+    display: flex; align-items: center; height: 64px; gap: 12px;
+  }
+  .header-inner h1 { font-size: 18px; flex: 1; }
+  .header-inner h1 span { color: var(--gold); }
+  .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; font-family: inherit; }
+  .btn-gold { background: var(--gold); color: var(--navy); }
+  .btn-outline { background: transparent; border: 1.5px solid rgba(255,255,255,0.5); color: white; }
+  .btn-outline:hover { background: rgba(255,255,255,0.1); }
+  .btn-green { background: var(--green); color: white; }
+  .btn-green:hover { background: #388e3c; }
+  .btn-red { background: var(--red); color: white; }
+  .btn-red:hover { background: #d32f2f; }
+  .btn-blue { background: var(--blue); color: white; }
+
+  /* MAIN */
+  #mainApp { display: none; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: white; border-radius: 12px; padding: 20px 24px;
+    box-shadow: var(--shadow); border-top: 4px solid var(--navy);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .stat-card .num { font-size: 32px; font-weight: 800; color: var(--navy); }
+  .stat-card .lbl { font-size: 13px; color: var(--text2); }
+
+  /* TABS */
+  .tabs { display: flex; gap: 0; background: white; border-radius: 12px 12px 0 0; overflow: hidden; box-shadow: var(--shadow); margin-bottom: 0; }
+  .tab-btn {
+    flex: 1; padding: 14px 20px; border: none; cursor: pointer;
+    font-size: 14px; font-weight: 600; font-family: inherit;
+    background: white; color: var(--text2); border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); background: #f0f4ff; }
+  .tab-btn:hover:not(.active) { background: #f8f9ff; }
+
+  /* TABLE */
+  .table-wrap { background: white; border-radius: 0 0 12px 12px; box-shadow: var(--shadow); overflow: hidden; }
+  .search-bar { padding: 16px 20px; border-bottom: 1px solid #e8eaf0; display: flex; gap: 12px; align-items: center; }
+  .search-bar input {
+    flex: 1; padding: 9px 14px; border: 1.5px solid #dde1f0; border-radius: 8px;
+    font-size: 14px; outline: none; font-family: inherit;
+  }
+  .search-bar input:focus { border-color: var(--blue); }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #f8f9ff; padding: 12px 16px; text-align: left; font-size: 13px; color: var(--text2); font-weight: 700; border-bottom: 2px solid #e8eaf0; }
+  td { padding: 14px 16px; border-bottom: 1px solid #f0f2f8; font-size: 14px; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8f9ff; }
+
+  /* BADGE */
+  .role-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; white-space: nowrap;
+  }
+  .role-super_admin  { background: #fff3cd; color: #856404; }
+  .role-admin_level3 { background: #d1ecf1; color: #0c5460; }
+  .role-admin_level2 { background: #d4edda; color: #155724; }
+  .role-admin_level1 { background: #e2e3e5; color: #383d41; }
+  .role-pending      { background: #f8d7da; color: #721c24; }
+
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* VISITOR PANEL */
+  .visitor-panel { background: white; border-radius: 12px; padding: 28px; box-shadow: var(--shadow); }
+  .visitor-panel h3 { font-size: 18px; color: var(--navy); margin-bottom: 20px; }
+  .visitor-big { font-size: 72px; font-weight: 800; color: var(--navy); text-align: center; padding: 32px 0; }
+  .visitor-label { text-align: center; font-size: 16px; color: var(--text2); margin-top: -24px; margin-bottom: 32px; }
+
+  /* SELECT */
+  select { padding: 6px 10px; border: 1.5px solid #dde1f0; border-radius: 6px; font-size: 13px; font-family: inherit; outline: none; cursor: pointer; }
+  select:focus { border-color: var(--blue); }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 48px; color: #999; font-size: 15px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #1a1a2e; color: white; padding: 12px 24px; border-radius: 8px;
+    font-size: 14px; transition: transform 0.3s; z-index: 9999; pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .header-inner h1 { font-size: 15px; }
+    table { font-size: 13px; }
+    td, th { padding: 10px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="icon">👑</div>
+    <h2>Super Admin</h2>
+    <p>เฉพาะผู้ดูแลระบบสูงสุดเท่านั้น</p>
+    <input type="email" id="saEmail" placeholder="อีเมล" onkeyup="if(event.key==='Enter')doSALogin()">
+    <input type="password" id="saPass" placeholder="รหัสผ่าน" onkeyup="if(event.key==='Enter')doSALogin()">
+    <div class="login-error" id="saError"></div>
+    <button class="login-btn" id="btnSALogin" onclick="doSALogin()">🔓 เข้าสู่ระบบ</button>
+    <p style="margin-top:14px;font-size:13px"><a href="index.html" style="color:var(--blue)">← กลับหน้าหลัก</a></p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp">
+  <header>
+    <div class="header-inner">
+      <h1>👑 Super Admin — <span>จัดการผู้ดูแลระบบ</span></h1>
+      <span id="saUserInfo" style="color:rgba(255,255,255,0.8);font-size:13px"></span>
+      <button class="btn btn-gold" onclick="loadAllUsers()">🔄 รีเฟรช</button>
+      <button class="btn btn-outline" onclick="window.open('admin.html','_blank')">⚙️ Admin Panel</button>
+      <button class="btn btn-outline" onclick="doSALogout()">🚪 ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card" style="border-top-color:#C9A84C">
+        <div class="num" id="countTotal">—</div>
+        <div class="lbl">ผู้ใช้ทั้งหมด</div>
+      </div>
+      <div class="stat-card" style="border-top-color:#C62828">
+        <div class="num" id="countPending">—</div>
+        <div class="lbl">รอการอนุมัติ</div>
+      </div>
+      <div class="stat-card" style="border-top-color:#2E7D32">
+        <div class="num" id="countActive">—</div>
+        <div class="lbl">ใช้งานได้</div>
+      </div>
+      <div class="stat-card" style="border-top-color:#1565C0">
+        <div class="num" id="countVisitors">—</div>
+        <div class="lbl">ผู้เข้าชมเว็บ</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-pending" onclick="switchTab('pending')">⏳ รอการอนุมัติ</button>
+      <button class="tab-btn" id="tab-active"  onclick="switchTab('active')">✅ ผู้ดูแลที่ใช้งาน</button>
+      <button class="tab-btn" id="tab-all"     onclick="switchTab('all')">👥 ผู้ใช้ทั้งหมด</button>
+      <button class="tab-btn" id="tab-visitors" onclick="switchTab('visitors')">📊 สถิติผู้เข้าชม</button>
+    </div>
+
+    <!-- TABLE WRAP -->
+    <div class="table-wrap" id="tableWrap">
+      <div class="search-bar">
+        <input type="text" id="searchUser" placeholder="🔍 ค้นหาชื่อ อีเมล หน่วยงาน..." oninput="renderTable()">
+        <span id="resultCount" style="font-size:13px;color:#999;white-space:nowrap"></span>
+      </div>
+      <div id="tableContainer"></div>
+    </div>
+
+    <!-- VISITOR PANEL (hidden by default) -->
+    <div class="visitor-panel" id="visitorPanel" style="display:none">
+      <h3>📊 สถิติผู้เข้าชมเว็บไซต์</h3>
+      <div class="visitor-big" id="visitorBig">—</div>
+      <div class="visitor-label">จำนวนผู้เข้าชมทั้งหมด (ไม่ซ้ำต่อ session)</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { loginAdmin, logoutAdmin, getUserProfile, onAuthChange } from './auth.js';
+import { db } from './firebase-config.js';
+import { getVisitorCount, subscribeVisitorCount } from './visitor-counter.js';
+import {
+  collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const ROLE_LABELS = {
+  super_admin:  'Super Admin',
+  admin_level3: 'ระดับ 3 (สิทธิ์เต็ม)',
+  admin_level2: 'ระดับ 2 (เพิ่ม/แก้ไข/ลบ)',
+  admin_level1: 'ระดับ 1 (ดูและแก้ไข)',
+  pending:      'รอการอนุมัติ'
+};
+
+let allUsers = [];
+let currentTab = 'pending';
+let saProfile = null;
+
+// ===== LOGIN =====
+window.doSALogin = async function() {
+  const email = document.getElementById('saEmail').value.trim();
+  const pass  = document.getElementById('saPass').value;
+  const errEl = document.getElementById('saError');
+  const btn   = document.getElementById('btnSALogin');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'กรุณากรอกอีเมลและรหัสผ่าน'; return; }
+  btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...';
+  try {
+    const { user, profile } = await loginAdmin(email, pass);
+    if (profile.role !== 'super_admin') {
+      await logoutAdmin();
+      throw new Error('เฉพาะ Super Admin เท่านั้นที่เข้าหน้านี้ได้');
+    }
+    saProfile = profile;
+    enterSuperAdmin(profile);
+  } catch(e) {
+    errEl.textContent = '❌ ' + (e.message || 'ไม่สามารถเข้าสู่ระบบได้');
+  } finally {
+    btn.disabled = false; btn.textContent = '🔓 เข้าสู่ระบบ';
+  }
+};
+
+window.doSALogout = async function() {
+  if (!confirm('ออกจากระบบ?')) return;
+  await logoutAdmin();
+  location.reload();
+};
+
+// ตรวจ session อัตโนมัติ
+onAuthChange(async (user, profile) => {
+  if (user && profile && profile.role === 'super_admin') {
+    saProfile = profile;
+    enterSuperAdmin(profile);
+  }
+});
+
+function enterSuperAdmin(profile) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  document.getElementById('saUserInfo').textContent =
+    `👤 ${profile.rank ? profile.rank + ' ' : ''}${profile.name}`;
+  loadAllUsers();
+  loadVisitorStats();
+}
+
+// ===== LOAD USERS =====
+async function loadAllUsers() {
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), orderBy('requestedAt', 'desc')));
+    allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    updateStatCounts();
+    renderTable();
+    toast('✅ โหลดข้อมูลแล้ว');
+  } catch(e) {
+    toast('❌ โหลดข้อมูลไม่ได้: ' + e.message);
+  }
+}
+
+function updateStatCounts() {
+  document.getElementById('countTotal').textContent   = allUsers.length;
+  document.getElementById('countPending').textContent = allUsers.filter(u => u.role === 'pending').length;
+  document.getElementById('countActive').textContent  = allUsers.filter(u => u.role !== 'pending').length;
+}
+
+async function loadVisitorStats() {
+  subscribeVisitorCount(count => {
+    document.getElementById('countVisitors').textContent = count.toLocaleString('th-TH');
+    document.getElementById('visitorBig').textContent    = count.toLocaleString('th-TH');
+  });
+}
+
+// ===== TABS =====
+window.switchTab = function(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('tableWrap').style.display   = tab === 'visitors' ? 'none' : 'block';
+  document.getElementById('visitorPanel').style.display = tab === 'visitors' ? 'block' : 'none';
+  if (tab !== 'visitors') renderTable();
+};
+
+// ===== RENDER TABLE =====
+window.renderTable = function() {
+  const q = document.getElementById('searchUser').value.toLowerCase();
+  let users = allUsers;
+  if (currentTab === 'pending') users = users.filter(u => u.role === 'pending');
+  if (currentTab === 'active')  users = users.filter(u => u.role !== 'pending');
+  if (q) users = users.filter(u =>
+    (u.name||'').toLowerCase().includes(q) ||
+    (u.email||'').toLowerCase().includes(q) ||
+    (u.department||'').toLowerCase().includes(q)
+  );
+  document.getElementById('resultCount').textContent = `พบ ${users.length} รายการ`;
+  const container = document.getElementById('tableContainer');
+  if (users.length === 0) {
+    container.innerHTML = `<div class="empty">ไม่พบข้อมูล</div>`; return;
+  }
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>ยศ-ชื่อ</th>
+          <th>อีเมล</th>
+          <th>สังกัด</th>
+          <th>ระดับสิทธิ์</th>
+          <th>วันที่สมัคร</th>
+          <th>การดำเนินการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${users.map(u => renderRow(u)).join('')}
+      </tbody>
+    </table>
+  `;
+};
+
+function renderRow(u) {
+  const date = u.requestedAt?.toDate ? u.requestedAt.toDate().toLocaleDateString('th-TH') : '—';
+  const roleOpts = Object.entries(ROLE_LABELS)
+    .filter(([k]) => k !== 'pending')
+    .map(([k, v]) => `<option value="${k}" ${u.role===k?'selected':''}>${v}</option>`)
+    .join('');
+  return `
+    <tr>
+      <td><strong>${u.rank||''} ${u.name||'—'}</strong></td>
+      <td style="color:#666;font-size:13px">${u.email||'—'}</td>
+      <td>${u.department||'—'}</td>
+      <td><span class="role-badge role-${u.role}">${ROLE_LABELS[u.role]||u.role}</span></td>
+      <td style="font-size:12px;color:#999">${date}</td>
+      <td>
+        <div class="actions">
+          ${u.role === 'pending' ? `
+            <select id="role-${u.id}">
+              ${roleOpts}
+            </select>
+            <button class="btn btn-green" style="font-size:12px;padding:5px 10px" onclick="approveUser('${u.id}')">✅ อนุมัติ</button>
+          ` : `
+            <select onchange="changeRole('${u.id}', this.value)">
+              ${roleOpts}
+            </select>
+          `}
+          ${u.role !== 'super_admin' ? `
+            <button class="btn btn-red" style="font-size:12px;padding:5px 10px" onclick="deleteUser('${u.id}','${u.name||u.email}')">🗑️</button>
+          ` : ''}
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+// ===== APPROVE =====
+window.approveUser = async function(uid) {
+  const selectEl = document.getElementById('role-' + uid);
+  const role = selectEl ? selectEl.value : 'admin_level1';
+  if (!confirm(`อนุมัติผู้ใช้ด้วยระดับ "${ROLE_LABELS[role]}"?`)) return;
+  try {
+    await updateDoc(doc(db, 'users', uid), {
+      role, approved: true,
+      approvedAt: serverTimestamp(),
+      approvedBy: saProfile.uid
+    });
+    toast('✅ อนุมัติแล้ว');
+    await loadAllUsers();
+  } catch(e) { toast('❌ เกิดข้อผิดพลาด: ' + e.message); }
+};
+
+// ===== CHANGE ROLE =====
+window.changeRole = async function(uid, newRole) {
+  if (!confirm(`เปลี่ยนระดับสิทธิ์เป็น "${ROLE_LABELS[newRole]}"?`)) return;
+  try {
+    await updateDoc(doc(db, 'users', uid), { role: newRole });
+    toast('✅ เปลี่ยนระดับสิทธิ์แล้ว');
+    const u = allUsers.find(u => u.id === uid);
+    if (u) u.role = newRole;
+    updateStatCounts(); renderTable();
+  } catch(e) { toast('❌ เกิดข้อผิดพลาด: ' + e.message); }
+};
+
+// ===== DELETE =====
+window.deleteUser = async function(uid, name) {
+  if (!confirm(`ลบบัญชี "${name}" ออกจากระบบ?\nการกระทำนี้ไม่สามารถเลิกทำได้`)) return;
+  try {
+    await deleteDoc(doc(db, 'users', uid));
+    toast('🗑️ ลบบัญชีแล้ว');
+    allUsers = allUsers.filter(u => u.id !== uid);
+    updateStatCounts(); renderTable();
+  } catch(e) { toast('❌ เกิดข้อผิดพลาด: ' + e.message); }
+};
+
+// ===== TOAST =====
+window.toast = function(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+};
+</script>
+</body>
+</html>
