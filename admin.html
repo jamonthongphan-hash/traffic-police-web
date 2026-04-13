@@ -386,8 +386,9 @@ function setCurrentUserProfile(p) { currentUserProfile = p; }
 // ===== ACTIVITY LOG HELPER =====
 async function writeLog(action, type, name, detail) {
   try {
-    const { logActivity } = await import('./activity-log.js');
-    await logActivity(currentUserProfile, action, type, name, detail);
+    if (typeof window._logActivity === 'function') {
+      await window._logActivity(currentUserProfile, action, type, name, detail);
+    }
   } catch(e) { console.warn('log error', e); }
 }
 
@@ -680,7 +681,7 @@ function confirmAddCat() {
     faq: []
   };
   adminData.push(newCat);
-  saveData();
+  saveData(adminData);
   writeLog('add', 'category', title);
   closeModal('addCatModal');
   buildSidebar();
@@ -693,7 +694,7 @@ function deleteCat(catId) {
   if (!cat) return;
   if (!confirm('ลบหมวดหมู่ "' + cat.title + '" และข้อมูลทั้งหมดในนั้น?\nการกระทำนี้ไม่สามารถเลิกทำได้')) return;
   adminData = adminData.filter(c => c.id !== catId);
-  saveData();
+  saveData(adminData);
   writeLog('delete', 'category', cat.title);
   currentCatId = null;
   buildSidebar();
@@ -862,8 +863,12 @@ window._roleLabels = {
 </script>
 
 <script type="module">
-  // ตรวจสอบ session login จาก Firebase เมื่อโหลดหน้า
   import { onAuthChange } from './auth.js';
+  import { logActivity } from './activity-log.js';
+
+  // expose logActivity ให้ regular script เรียกได้
+  window._logActivity = logActivity;
+
   onAuthChange((user, profile) => {
     if (user && profile && profile.role !== 'pending') {
       if (typeof setCurrentUserProfile === 'function') setCurrentUserProfile(profile);
