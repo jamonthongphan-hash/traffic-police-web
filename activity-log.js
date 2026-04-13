@@ -1,9 +1,6 @@
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp }
-  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-import { getApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import './firebase-config.js';
-
-function db() { return getFirestore(getApp()); }
+import { collection, addDoc, getDocs, query, orderBy, limit, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { db } from './firebase-config.js';
 
 /**
  * บันทึก log การกระทำของ admin
@@ -16,7 +13,7 @@ function db() { return getFirestore(getApp()); }
 export async function logActivity(profile, action, type, name, detail = '') {
   if (!profile) return;
   try {
-    await addDoc(collection(db(), 'activityLogs'), {
+    await addDoc(collection(db, 'activityLogs'), {
       timestamp: serverTimestamp(),
       uid:    profile.uid    || '',
       name:   profile.name   || '',
@@ -37,7 +34,7 @@ export async function logActivity(profile, action, type, name, detail = '') {
  * @param {number} n - จำนวน log ที่ต้องการ (default 200)
  */
 export async function getActivityLogs(n = 200) {
-  const q = query(collection(db(), 'activityLogs'), orderBy('timestamp', 'desc'), limit(n));
+  const q = query(collection(db, 'activityLogs'), orderBy('timestamp', 'desc'), limit(n));
   const snap = await getDocs(q);
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
