@@ -24,6 +24,15 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // ===== Activity Logs =====
+    match /activityLogs/{logId} {
+      // admin ที่ approved เขียนได้
+      allow create: if request.auth != null &&
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approved == true;
+      // อ่านได้เฉพาะ super_admin
+      allow read: if isSuperAdmin();
+    }
+
     // ===== Helper Functions =====
     function isSuperAdmin() {
       return request.auth != null &&

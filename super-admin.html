@@ -201,6 +201,7 @@
       <button class="tab-btn" id="tab-active"  onclick="switchTab('active')">✅ ผู้ดูแลที่ใช้งาน</button>
       <button class="tab-btn" id="tab-all"     onclick="switchTab('all')">👥 ผู้ใช้ทั้งหมด</button>
       <button class="tab-btn" id="tab-visitors" onclick="switchTab('visitors')">📊 สถิติผู้เข้าชม</button>
+      <button class="tab-btn" id="tab-logs"    onclick="switchTab('logs')">📋 ประวัติการแก้ไข</button>
     </div>
 
     <!-- TABLE WRAP -->
@@ -210,6 +211,15 @@
         <span id="resultCount" style="font-size:13px;color:#999;white-space:nowrap"></span>
       </div>
       <div id="tableContainer"></div>
+    </div>
+
+    <!-- ACTIVITY LOG PANEL -->
+    <div id="logPanel" style="display:none;background:white;border-radius:0 0 12px 12px;box-shadow:var(--shadow);padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <strong style="font-size:15px">📋 ประวัติการแก้ไขล่าสุด</strong>
+        <button onclick="loadLogs()" style="background:var(--navy);color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px">🔄 โหลดใหม่</button>
+      </div>
+      <div id="logContainer"><div style="color:#999;padding:20px;text-align:center">กดโหลดใหม่เพื่อดูประวัติ</div></div>
     </div>
 
     <!-- VISITOR PANEL (hidden by default) -->
@@ -227,6 +237,7 @@
 import { loginAdmin, logoutAdmin, getUserProfile, onAuthChange } from './auth.js';
 import { db } from './firebase-config.js';
 import { getVisitorCount, subscribeVisitorCount } from './visitor-counter.js';
+import { getActivityLogs } from './activity-log.js';
 import {
   collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -321,9 +332,55 @@ window.switchTab = function(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  document.getElementById('tableWrap').style.display   = tab === 'visitors' ? 'none' : 'block';
+  document.getElementById('tableWrap').style.display    = (tab === 'visitors' || tab === 'logs') ? 'none' : 'block';
   document.getElementById('visitorPanel').style.display = tab === 'visitors' ? 'block' : 'none';
-  if (tab !== 'visitors') renderTable();
+  document.getElementById('logPanel').style.display     = tab === 'logs' ? 'block' : 'none';
+  if (tab === 'logs') loadLogs();
+  else if (tab !== 'visitors') renderTable();
+};
+
+// ===== ACTIVITY LOGS =====
+window.loadLogs = async function() {
+  const container = document.getElementById('logContainer');
+  container.innerHTML = '<div style="color:#999;padding:20px;text-align:center">⏳ กำลังโหลด...</div>';
+  try {
+    const logs = await getActivityLogs(200);
+    if (logs.length === 0) {
+      container.innerHTML = '<div style="color:#999;padding:20px;text-align:center">ยังไม่มีประวัติการแก้ไข</div>';
+      return;
+    }
+    const actionLabel = { add: '➕ เพิ่ม', edit: '✏️ แก้ไข', delete: '🗑️ ลบ' };
+    const typeLabel   = { category: 'หมวดหมู่', section: 'หมวดย่อย', doc: 'เอกสาร', faq: 'FAQ' };
+    container.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead style="background:#f0f4ff">
+          <tr>
+            <th style="padding:10px 12px;text-align:left;border-bottom:1px solid #e0e7ff">วันเวลา</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:1px solid #e0e7ff">ผู้ดำเนินการ</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:1px solid #e0e7ff">การกระทำ</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:1px solid #e0e7ff">ประเภท</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:1px solid #e0e7ff">รายการ</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:1px solid #e0e7ff">รายละเอียด</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${logs.map(l => {
+            const dt = l.timestamp?.toDate ? l.timestamp.toDate().toLocaleString('th-TH') : '—';
+            const actionColor = l.action === 'delete' ? '#c62828' : l.action === 'add' ? '#2e7d32' : '#1565c0';
+            return `<tr style="border-bottom:1px solid #f0f0f0">
+              <td style="padding:8px 12px;color:#666;white-space:nowrap">${dt}</td>
+              <td style="padding:8px 12px"><strong>${l.rank||''} ${l.name||'—'}</strong></td>
+              <td style="padding:8px 12px;color:${actionColor};font-weight:600">${actionLabel[l.action]||l.action}</td>
+              <td style="padding:8px 12px">${typeLabel[l.type]||l.type}</td>
+              <td style="padding:8px 12px">${l.target||'—'}</td>
+              <td style="padding:8px 12px;color:#888;font-size:12px">${l.detail||''}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  } catch(e) {
+    container.innerHTML = `<div style="color:red;padding:20px">❌ โหลดไม่ได้: ${e.message}</div>`;
+  }
 };
 
 // ===== RENDER TABLE =====

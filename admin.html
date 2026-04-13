@@ -380,6 +380,16 @@ let addFaqTargetCat = null;
 
 // ===== STATE: current user profile =====
 let currentUserProfile = null;
+// ให้ module script เซ็ตค่าได้ (module scope แยกจาก regular script)
+function setCurrentUserProfile(p) { currentUserProfile = p; }
+
+// ===== ACTIVITY LOG HELPER =====
+async function writeLog(action, type, name, detail) {
+  try {
+    const { logActivity } = await import('./activity-log.js');
+    await logActivity(currentUserProfile, action, type, name, detail);
+  } catch(e) { console.warn('log error', e); }
+}
 
 // ===== FIREBASE LOGIN =====
 async function doFirebaseLogin() {
@@ -605,13 +615,25 @@ function updateFaq(catId, fi, field, val) {
 function deleteDoc(catId, si, di) {
   if (!confirm('ลบเอกสารนี้?')) return;
   const cat = adminData.find(c => c.id === catId);
-  if (cat) { cat.sections[si].docs.splice(di, 1); editCat(catId); toast('🗑️ ลบเอกสารแล้ว'); }
+  if (cat) {
+    const docTitle = cat.sections[si].docs[di].title;
+    cat.sections[si].docs.splice(di, 1);
+    writeLog('delete', 'doc', docTitle, 'ใน ' + cat.title + ' > ' + cat.sections[si].title);
+    editCat(catId);
+    toast('🗑️ ลบเอกสารแล้ว');
+  }
 }
 
 function deleteSec(catId, si) {
   if (!confirm('ลบหมวดย่อยนี้และเอกสารทั้งหมด?')) return;
   const cat = adminData.find(c => c.id === catId);
-  if (cat) { cat.sections.splice(si, 1); editCat(catId); toast('🗑️ ลบหมวดย่อยแล้ว'); }
+  if (cat) {
+    const secTitle = cat.sections[si].title;
+    cat.sections.splice(si, 1);
+    writeLog('delete', 'section', secTitle, 'ใน ' + cat.title);
+    editCat(catId);
+    toast('🗑️ ลบหมวดย่อยแล้ว');
+  }
 }
 
 function deleteFaq(catId, fi) {
@@ -624,6 +646,7 @@ function addDoc(catId, si) {
   const cat = adminData.find(c => c.id === catId);
   if (cat) {
     cat.sections[si].docs.push({ title: 'เอกสารใหม่', url: '' });
+    writeLog('add', 'doc', 'เอกสารใหม่', 'ใน ' + cat.title + ' > ' + cat.sections[si].title);
     editCat(catId);
     toast('➕ เพิ่มเอกสารแล้ว');
   }
@@ -658,6 +681,7 @@ function confirmAddCat() {
   };
   adminData.push(newCat);
   saveData();
+  writeLog('add', 'category', title);
   closeModal('addCatModal');
   buildSidebar();
   editCat(id);
@@ -670,6 +694,7 @@ function deleteCat(catId) {
   if (!confirm('ลบหมวดหมู่ "' + cat.title + '" และข้อมูลทั้งหมดในนั้น?\nการกระทำนี้ไม่สามารถเลิกทำได้')) return;
   adminData = adminData.filter(c => c.id !== catId);
   saveData();
+  writeLog('delete', 'category', cat.title);
   currentCatId = null;
   buildSidebar();
   showDashboard();
@@ -690,6 +715,7 @@ function confirmAddSection() {
   const cat = adminData.find(c => c.id === addSectionTargetCat);
   if (cat) {
     cat.sections.push({ title, docs: [] });
+    writeLog('add', 'section', title, 'ใน ' + cat.title);
     closeModal('addSectionModal');
     editCat(addSectionTargetCat);
     toast('✅ เพิ่มหมวดย่อยแล้ว');
@@ -840,7 +866,7 @@ window._roleLabels = {
   import { onAuthChange } from './auth.js';
   onAuthChange((user, profile) => {
     if (user && profile && profile.role !== 'pending') {
-      window.currentUserProfile = profile;
+      if (typeof setCurrentUserProfile === 'function') setCurrentUserProfile(profile);
       if (typeof enterAdminApp === 'function') enterAdminApp(profile);
     }
   });
