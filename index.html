@@ -974,13 +974,26 @@ document.getElementById('adminModal').addEventListener('click', function(e) {
 });
 </script>
 
-<!-- Firebase Visitor Counter -->
+<!-- Firebase: Visitor Counter + Real-time Categories -->
 <script type="module">
   import { trackVisit, subscribeVisitorCount } from './visitor-counter.js';
+  import { subscribeCategories } from './data-store.js';
+
   trackVisit();
+
+  // จำนวนผู้เข้าชม real-time
   subscribeVisitorCount(count => {
     const el = document.getElementById('statVisitors');
     if (el) el.textContent = count.toLocaleString('th-TH');
+  });
+
+  // หมวดหมู่ real-time: ทันทีที่ admin บันทึก ทุก browser จะเห็นข้อมูลใหม่
+  subscribeCategories(data => {
+    if (!data || !data.length) return;
+    currentData = data;
+    buildNav();
+    buildQuickGrid();
+    updateStats();
   });
 </script>
 </body>

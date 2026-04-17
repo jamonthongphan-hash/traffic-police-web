@@ -378,6 +378,17 @@ let currentCatId = null;
 let addSectionTargetCat = null;
 let addFaqTargetCat = null;
 
+// ===== OVERRIDE saveData → บันทึก Firestore ด้วย =====
+// ฟังก์ชันนี้ override saveData จาก data.js
+function saveData(data) {
+  // เก็บ localStorage ไว้เป็น backup
+  localStorage.setItem('trafficPoliceData', JSON.stringify(data));
+  // บันทึก Firestore (ให้ทุก browser เห็นข้อมูลเดียวกัน)
+  if (window._saveCategories) {
+    window._saveCategories(data).catch(e => console.warn('Firestore save error:', e));
+  }
+}
+
 // ===== STATE: current user profile =====
 let currentUserProfile = null;
 // ให้ module script เซ็ตค่าได้ (module scope แยกจาก regular script)
@@ -428,9 +439,22 @@ function enterAdminApp(profile) {
   if (profile.role === 'super_admin') {
     document.getElementById('btnSuperAdmin').style.display = 'inline-block';
   }
-  adminData = JSON.parse(JSON.stringify(loadData()));
-  buildSidebar(profile);
-  showDashboard();
+  // โหลดจาก Firestore ก่อน ถ้าไม่ได้ fallback เป็น data.js
+  if (window._loadCategories) {
+    window._loadCategories().then(data => {
+      adminData = JSON.parse(JSON.stringify(data || loadData()));
+      buildSidebar(profile);
+      showDashboard();
+    }).catch(() => {
+      adminData = JSON.parse(JSON.stringify(loadData()));
+      buildSidebar(profile);
+      showDashboard();
+    });
+  } else {
+    adminData = JSON.parse(JSON.stringify(loadData()));
+    buildSidebar(profile);
+    showDashboard();
+  }
 }
 
 async function logout() {
@@ -865,9 +889,12 @@ window._roleLabels = {
 <script type="module">
   import { onAuthChange } from './auth.js';
   import { logActivity } from './activity-log.js';
+  import { saveCategories, loadCategories } from './data-store.js';
 
-  // expose logActivity ให้ regular script เรียกได้
-  window._logActivity = logActivity;
+  // expose ให้ regular script เรียกได้
+  window._logActivity    = logActivity;
+  window._saveCategories = saveCategories;
+  window._loadCategories = loadCategories;
 
   onAuthChange((user, profile) => {
     if (user && profile && profile.role !== 'pending') {
