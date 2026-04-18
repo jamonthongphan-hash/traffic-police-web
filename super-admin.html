@@ -281,7 +281,7 @@ window.doSALogin = async function() {
 window.doSALogout = async function() {
   if (!confirm('ออกจากระบบ?')) return;
   await logoutAdmin();
-  location.reload();
+  window.location.href = 'index.html';
 };
 
 // ตรวจ session อัตโนมัติ

@@ -464,11 +464,7 @@ async function logout() {
     await logoutAdmin();
   } catch(e) { /* ignore */ }
   currentUserProfile = null;
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('adminApp').style.display = 'none';
-  document.getElementById('loginEmail').value = '';
-  document.getElementById('loginPass').value = '';
-  document.getElementById('userInfo').innerHTML = '';
+  window.location.href = 'index.html';
 }
 
 // ===== BUILD SIDEBAR =====
