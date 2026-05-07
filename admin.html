@@ -153,6 +153,18 @@
   }
   .doc-row-fields input:focus { border-color: var(--blue); }
   .doc-row-actions { display: flex; flex-direction: column; gap: 4px; padding-top: 4px; }
+  .upload-progress {
+    height: 4px; background: #e8ecff; border-radius: 4px; margin-top: 4px; overflow: hidden; display: none;
+  }
+  .upload-progress-bar {
+    height: 100%; background: var(--blue); border-radius: 4px; transition: width 0.2s; width: 0%;
+  }
+  .btn-upload {
+    background: #f0f4ff; color: var(--blue); border: 1.5px solid #c5d0ff;
+    border-radius: 6px; font-size: 11px; padding: 4px 8px; cursor: pointer;
+    white-space: nowrap; transition: background 0.15s;
+  }
+  .btn-upload:hover { background: #dce4ff; }
   .add-doc-row {
     padding: 10px 20px; border-top: 1px dashed #e0e4f0;
     display: flex; align-items: center; gap: 12px;
@@ -289,6 +301,23 @@
       <!-- EXPORT VIEW -->
       <div id="exportView" style="display:none">
         <div class="toolbar"><h2>📤 Export ข้อมูล</h2></div>
+
+        <!-- ตั้งค่า Google Drive Upload (super_admin เท่านั้น) -->
+        <div class="export-panel" id="gdriveConfigPanel" style="margin-bottom:16px;border-left:4px solid #1565C0">
+          <h3>☁️ ตั้งค่า Google Drive Upload</h3>
+          <p style="color:#666;font-size:13px;margin-bottom:12px">
+            วาง URL ของ Google Apps Script Web App เพื่อเปิดใช้ปุ่มอัปโหลดไฟล์ PDF
+          </p>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input type="text" id="appsScriptUrlInput"
+              placeholder="https://script.google.com/macros/s/xxxxx/exec"
+              style="flex:1;padding:10px 14px;border:1.5px solid #dde1f0;border-radius:8px;font-size:13px"
+              oninput="previewAppsScriptUrl(this.value)">
+            <button class="btn btn-blue" onclick="saveAppsScriptUrl()">💾 บันทึก URL</button>
+          </div>
+          <p id="gdriveUrlStatus" style="font-size:12px;margin-top:8px;color:#888"></p>
+        </div>
+
         <div class="export-panel">
           <h3>คัดลอกข้อมูล JSON เพื่ออัปเดตไฟล์ data.js</h3>
           <p>คัดลอกข้อความด้านล่างนี้ แล้วแทนที่ส่วน <code>const CATEGORIES = [...]</code> ในไฟล์ <strong>data.js</strong><br>
@@ -378,6 +407,38 @@ let currentCatId = null;
 let addSectionTargetCat = null;
 let addFaqTargetCat = null;
 
+// ===== GOOGLE DRIVE CONFIG =====
+(function initGDriveConfig() {
+  const saved = localStorage.getItem('appsScriptUrl');
+  if (saved) window._appsScriptUrl = saved;
+})();
+
+function previewAppsScriptUrl(val) {
+  const el = document.getElementById('gdriveUrlStatus');
+  if (!val) { el.textContent = ''; return; }
+  el.textContent = val.includes('script.google.com') ? '✅ URL ดูถูกต้อง' : '⚠️ URL ควรเป็น script.google.com/macros/...';
+  el.style.color = val.includes('script.google.com') ? '#2e7d32' : '#e65100';
+}
+
+function saveAppsScriptUrl() {
+  const val = document.getElementById('appsScriptUrlInput').value.trim();
+  if (!val) { toast('❌ กรุณาใส่ URL ก่อน'); return; }
+  localStorage.setItem('appsScriptUrl', val);
+  window._appsScriptUrl = val;
+  document.getElementById('gdriveUrlStatus').textContent = '✅ บันทึกแล้ว! ปุ่ม 📎 อัปโหลดพร้อมใช้งาน';
+  document.getElementById('gdriveUrlStatus').style.color = '#2e7d32';
+  toast('✅ บันทึก Apps Script URL แล้ว');
+}
+
+function loadGDriveConfigUI() {
+  const saved = localStorage.getItem('appsScriptUrl');
+  const input = document.getElementById('appsScriptUrlInput');
+  if (input && saved) {
+    input.value = saved;
+    previewAppsScriptUrl(saved);
+  }
+}
+
 // ===== OVERRIDE saveData → บันทึก Firestore ด้วย =====
 // ฟังก์ชันนี้ override saveData จาก data.js
 function saveData(data) {
@@ -393,6 +454,61 @@ function saveData(data) {
 let currentUserProfile = null;
 // ให้ module script เซ็ตค่าได้ (module scope แยกจาก regular script)
 function setCurrentUserProfile(p) { currentUserProfile = p; }
+
+// ===== PDF UPLOAD =====
+async function handleUpload(input, catId, si, di) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const progWrap = document.getElementById(`prog-${si}-${di}`);
+  const progBar  = document.getElementById(`progBar-${si}-${di}`);
+  const urlInput = document.getElementById(`urlInput-${si}-${di}`);
+
+  if (!window._uploadPDF) {
+    toast('❌ ระบบอัปโหลดยังโหลดไม่เสร็จ กรุณารอสักครู่');
+    return;
+  }
+
+  // หาชื่อหมวดหมู่เพื่อใช้เป็นชื่อโฟลเดอร์ใน Google Drive
+  const cat = adminData.find(c => c.id === catId);
+  const catTitle = cat ? cat.title : 'ทั่วไป';
+
+  progWrap.style.display = 'block';
+  progBar.style.width = '0%';
+
+  try {
+    // ส่ง catTitle ให้ Apps Script สร้างโฟลเดอร์ถูกต้อง
+    const result = await window._uploadPDF(file, catTitle, pct => {
+      progBar.style.width = pct + '%';
+    });
+
+    // ใช้ viewUrl สำหรับลิงค์ (คลิกดูใน Google Drive)
+    const fileUrl = result.viewUrl || result;
+    urlInput.value = fileUrl;
+    updateDoc(catId, si, di, 'url', fileUrl);
+
+    // ตั้งชื่อเอกสารอัตโนมัติถ้ายังว่างอยู่
+    if (cat && cat.sections[si] && cat.sections[si].docs[di]) {
+      const docObj = cat.sections[si].docs[di];
+      if (!docObj.title || docObj.title === 'เอกสารใหม่') {
+        const autoName = file.name.replace(/\.[^/.]+$/, '');
+        updateDoc(catId, si, di, 'title', autoName);
+        const titleInput = document.querySelector(`#docRow-${si}-${di} input[type="text"]`);
+        if (titleInput) titleInput.value = autoName;
+      }
+    }
+
+    saveData(adminData);
+    writeLog('add', 'doc', file.name, 'อัปโหลดไฟล์ใน ' + catTitle);
+    toast('✅ อัปโหลด "' + file.name + '" → 📁 ' + catTitle + ' สำเร็จ');
+    setTimeout(() => { progWrap.style.display = 'none'; }, 1500);
+
+  } catch (e) {
+    progWrap.style.display = 'none';
+    toast('❌ อัปโหลดไม่ได้: ' + e.message);
+  }
+  input.value = '';
+}
 
 // ===== ACTIVITY LOG HELPER =====
 async function writeLog(action, type, name, detail) {
@@ -573,8 +689,22 @@ function editCat(catId) {
             <div class="doc-row-fields">
               <input type="text" value="${escHtml(doc.title)}" placeholder="ชื่อเอกสาร"
                 onchange="updateDoc('${catId}',${si},${di},'title',this.value)">
-              <input type="url" value="${escHtml(doc.url)}" placeholder="URL ลิงก์ Google Drive..."
-                onchange="updateDoc('${catId}',${si},${di},'url',this.value)">
+              <div>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <input type="url" id="urlInput-${si}-${di}" value="${escHtml(doc.url)}"
+                    placeholder="URL หรืออัปโหลดไฟล์ PDF..."
+                    onchange="updateDoc('${catId}',${si},${di},'url',this.value)"
+                    style="flex:1">
+                  <label class="btn-upload" title="อัปโหลด PDF/Word/PPT">
+                    📎
+                    <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx" style="display:none"
+                      onchange="handleUpload(this,'${catId}',${si},${di})">
+                  </label>
+                </div>
+                <div class="upload-progress" id="prog-${si}-${di}">
+                  <div class="upload-progress-bar" id="progBar-${si}-${di}"></div>
+                </div>
+              </div>
             </div>
             <div class="doc-row-actions">
               <button class="btn btn-red btn-sm" onclick="deleteDoc('${catId}',${si},${di})">🗑️</button>
@@ -781,6 +911,10 @@ function showExport() {
   document.getElementById('catEditor').style.display = 'none';
   document.getElementById('exportView').style.display = 'block';
   document.getElementById('exportArea').value = JSON.stringify(adminData, null, 2);
+  loadGDriveConfigUI();
+  // ซ่อน config panel สำหรับ non-super_admin
+  const panel = document.getElementById('gdriveConfigPanel');
+  if (panel) panel.style.display = (currentUserProfile && currentUserProfile.role === 'super_admin') ? 'block' : 'none';
 }
 
 function copyExport() {
@@ -886,11 +1020,13 @@ window._roleLabels = {
   import { onAuthChange } from './auth.js';
   import { logActivity } from './activity-log.js';
   import { saveCategories, loadCategories } from './data-store.js';
+  import { uploadToGDrive } from './gdrive-upload.js';
 
   // expose ให้ regular script เรียกได้
   window._logActivity    = logActivity;
   window._saveCategories = saveCategories;
   window._loadCategories = loadCategories;
+  window._uploadPDF      = uploadToGDrive; // ใช้ Google Drive แทน Firebase Storage
 
   onAuthChange((user, profile) => {
     if (user && profile && profile.role !== 'pending') {

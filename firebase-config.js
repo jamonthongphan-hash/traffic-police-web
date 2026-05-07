@@ -7,8 +7,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage }     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
-// 🔧 วาง firebaseConfig ที่ได้จาก Firebase Console ตรงนี้
 const firebaseConfig = {
   apiKey:            "AIzaSyDTj6CkKOYnBb5ti_O2sAmo2xEWdzgXrEU",
   authDomain:        "traffic-police-web-bkk.firebaseapp.com",
@@ -18,8 +18,9 @@ const firebaseConfig = {
   appId:             "1:178664930281:web:81ce2f02c22ba7f5376978"
 };
 
-const app  = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getFirestore(app);
+const app     = initializeApp(firebaseConfig);
+const auth    = getAuth(app);
+const db      = getFirestore(app);
+const storage = getStorage(app);
 
-export { auth, db };
+export { auth, db, storage };
