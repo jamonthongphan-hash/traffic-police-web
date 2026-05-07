@@ -13,8 +13,9 @@
  * ============================================================
  */
 
-// ชื่อโฟลเดอร์หลักใน Google Drive
-const ROOT_FOLDER_NAME = 'คู่มือตำรวจจราจร';
+// ID ของโฟลเดอร์หลักใน Google Drive ที่มีอยู่แล้ว
+// (จาก https://drive.google.com/drive/folders/1I7ptnMQAee8wE1YfsCI_oqeOS21_sAG_)
+const ROOT_FOLDER_ID = '1I7ptnMQAee8wE1YfsCI_oqeOS21_sAG_';
 
 // ============================================================
 // รับไฟล์และบันทึกลง Google Drive
@@ -27,10 +28,10 @@ function doPost(e) {
     const fileBytes = Utilities.base64Decode(data.fileData);
     const blob = Utilities.newBlob(fileBytes, data.mimeType, data.fileName);
 
-    // หาหรือสร้างโฟลเดอร์หลัก
-    const rootFolder = getOrCreateFolder(null, ROOT_FOLDER_NAME);
+    // เปิดโฟลเดอร์หลักที่มีอยู่แล้วใน Google Drive
+    const rootFolder = DriveApp.getFolderById(ROOT_FOLDER_ID);
 
-    // หาหรือสร้างโฟลเดอร์ย่อยตามหมวดหมู่
+    // หาหรือสร้างโฟลเดอร์ย่อยตามหมวดหมู่อัตโนมัติ
     const catFolder = getOrCreateFolder(rootFolder, data.catTitle || 'ทั่วไป');
 
     // บันทึกไฟล์
@@ -66,18 +67,13 @@ function doGet(e) {
 }
 
 // ============================================================
-// helper: หาโฟลเดอร์ตามชื่อ ถ้าไม่มีให้สร้างใหม่
+// helper: หาโฟลเดอร์ย่อยตามชื่อในโฟลเดอร์ parent
+//         ถ้าไม่มีให้สร้างใหม่อัตโนมัติ
 // ============================================================
 function getOrCreateFolder(parent, name) {
-  const iter = parent
-    ? parent.getFoldersByName(name)
-    : DriveApp.getFoldersByName(name);
-
+  const iter = parent.getFoldersByName(name);
   if (iter.hasNext()) return iter.next();
-
-  return parent
-    ? parent.createFolder(name)
-    : DriveApp.createFolder(name);
+  return parent.createFolder(name);
 }
 
 // ============================================================
