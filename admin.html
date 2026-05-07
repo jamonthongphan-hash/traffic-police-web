@@ -408,9 +408,13 @@ let addSectionTargetCat = null;
 let addFaqTargetCat = null;
 
 // ===== GOOGLE DRIVE CONFIG =====
+const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby1mmYeJIasex-ptKPEFiweucHaOw-K60M8KWOFUFgA6IImttvfEYlobp7PadkA-R_3/exec';
 (function initGDriveConfig() {
-  const saved = localStorage.getItem('appsScriptUrl');
-  if (saved) window._appsScriptUrl = saved;
+  const saved = localStorage.getItem('appsScriptUrl') || DEFAULT_APPS_SCRIPT_URL;
+  window._appsScriptUrl = saved;
+  if (!localStorage.getItem('appsScriptUrl')) {
+    localStorage.setItem('appsScriptUrl', DEFAULT_APPS_SCRIPT_URL);
+  }
 })();
 
 function previewAppsScriptUrl(val) {
@@ -477,13 +481,13 @@ async function handleUpload(input, catId, si, di) {
   progBar.style.width = '0%';
 
   try {
-    // ส่ง catTitle ให้ Apps Script สร้างโฟลเดอร์ถูกต้อง
-    const result = await window._uploadPDF(file, catTitle, pct => {
+    // อัปโหลดไป Firebase Storage โดยใช้ catId เป็น path
+    const result = await window._uploadPDF(file, catId, pct => {
       progBar.style.width = pct + '%';
     });
 
-    // ใช้ viewUrl สำหรับลิงค์ (คลิกดูใน Google Drive)
-    const fileUrl = result.viewUrl || result;
+    // Firebase Storage คืน URL string โดยตรง
+    const fileUrl = (result && result.viewUrl) ? result.viewUrl : result;
     urlInput.value = fileUrl;
     updateDoc(catId, si, di, 'url', fileUrl);
 
@@ -690,20 +694,10 @@ function editCat(catId) {
               <input type="text" value="${escHtml(doc.title)}" placeholder="ชื่อเอกสาร"
                 onchange="updateDoc('${catId}',${si},${di},'title',this.value)">
               <div>
-                <div style="display:flex;gap:6px;align-items:center">
-                  <input type="url" id="urlInput-${si}-${di}" value="${escHtml(doc.url)}"
-                    placeholder="URL หรืออัปโหลดไฟล์ PDF..."
-                    onchange="updateDoc('${catId}',${si},${di},'url',this.value)"
-                    style="flex:1">
-                  <label class="btn-upload" title="อัปโหลด PDF/Word/PPT">
-                    📎
-                    <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx" style="display:none"
-                      onchange="handleUpload(this,'${catId}',${si},${di})">
-                  </label>
-                </div>
-                <div class="upload-progress" id="prog-${si}-${di}">
-                  <div class="upload-progress-bar" id="progBar-${si}-${di}"></div>
-                </div>
+                <input type="url" id="urlInput-${si}-${di}" value="${escHtml(doc.url)}"
+                  placeholder="วาง URL จาก Google Drive เช่น https://drive.google.com/file/d/..."
+                  onchange="updateDoc('${catId}',${si},${di},'url',this.value)"
+                  style="width:100%">
               </div>
             </div>
             <div class="doc-row-actions">
@@ -1020,13 +1014,10 @@ window._roleLabels = {
   import { onAuthChange } from './auth.js';
   import { logActivity } from './activity-log.js';
   import { saveCategories, loadCategories } from './data-store.js';
-  import { uploadToGDrive } from './gdrive-upload.js';
-
   // expose ให้ regular script เรียกได้
   window._logActivity    = logActivity;
   window._saveCategories = saveCategories;
   window._loadCategories = loadCategories;
-  window._uploadPDF      = uploadToGDrive; // ใช้ Google Drive แทน Firebase Storage
 
   onAuthChange((user, profile) => {
     if (user && profile && profile.role !== 'pending') {

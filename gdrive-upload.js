@@ -5,10 +5,10 @@
  */
 
 // ============================================================
-// ⚙️ ใส่ URL ของ Apps Script Web App ที่ deploy แล้วตรงนี้
-// (จะได้หลัง deploy Apps Script ใน script.google.com)
+// ⚙️ URL ของ Apps Script Web App (hardcoded + override จาก localStorage)
 // ============================================================
-export const APPS_SCRIPT_URL = window._appsScriptUrl || '';
+const DEFAULT_UPLOAD_URL = 'https://script.google.com/macros/s/AKfycby1mmYeJIasex-ptKPEFiweucHaOw-K60M8KWOFUFgA6IImttvfEYlobp7PadkA-R_3/exec';
+export const APPS_SCRIPT_URL = DEFAULT_UPLOAD_URL;
 
 /**
  * อัปโหลดไฟล์ไป Google Drive
@@ -18,7 +18,7 @@ export const APPS_SCRIPT_URL = window._appsScriptUrl || '';
  * @returns {Promise<{viewUrl, previewUrl, fileName}>}
  */
 export async function uploadToGDrive(file, catTitle, onProgress) {
-  const url = window._appsScriptUrl;
+  const url = window._appsScriptUrl || localStorage.getItem('appsScriptUrl') || DEFAULT_UPLOAD_URL;
   if (!url) throw new Error('ยังไม่ได้ตั้งค่า Apps Script URL กรุณาติดต่อผู้ดูแลระบบ');
 
   // ตรวจสอบประเภทและขนาดไฟล์
