@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>คู่มือตำรวจจราจร — กองบังคับการตำรวจจราจร  กองบัญชาการตำรวจนครบาล</title>
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0D1B4B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ตร.จราจร">
+<link rel="apple-touch-icon" href="/logo.png">
+<!-- SEO -->
+<meta name="description" content="แหล่งรวมคู่มือ กฎหมาย และเอกสารสำคัญสำหรับตำรวจจราจร กองบัญชาการตำรวจนครบาล">
+<meta property="og:title" content="คู่มือตำรวจจราจร">
+<meta property="og:description" content="แหล่งรวมคู่มือ กฎหมาย คำสั่ง และเอกสารอ้างอิงสำหรับตำรวจจราจร">
+<meta property="og:image" content="/logo.png">
 <style>
   /* ======= RESET & BASE ======= */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -423,6 +435,43 @@
   }
   .faq-answer.open { max-height: 300px; padding: 0 24px 16px; }
 
+  /* ======= PDF PREVIEW MODAL ======= */
+  #pdfModal {
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,0.75); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center; padding:16px;
+  }
+  #pdfModal.open { display:flex; }
+  .pdf-modal-box {
+    background:white; border-radius:16px; width:100%; max-width:900px;
+    height:90vh; display:flex; flex-direction:column;
+    box-shadow:0 24px 80px rgba(0,0,0,0.5); overflow:hidden;
+  }
+  .pdf-modal-header {
+    display:flex; align-items:center; gap:12px;
+    padding:14px 20px; background:var(--navy);
+    color:white; flex-shrink:0;
+  }
+  .pdf-modal-title { flex:1; font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pdf-modal-actions { display:flex; gap:8px; }
+  .pdf-modal-actions a, .pdf-modal-actions button {
+    padding:6px 14px; border-radius:8px; font-size:13px; font-weight:600;
+    border:none; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:4px;
+  }
+  .pdf-btn-open { background:var(--gold); color:var(--navy); }
+  .pdf-btn-close { background:rgba(255,255,255,0.15); color:white; }
+  .pdf-btn-close:hover { background:rgba(255,255,255,0.25); }
+  #pdfFrame { flex:1; border:none; background:#f0f0f0; }
+  .pdf-modal-loading {
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:16px; color:#666; font-size:15px;
+  }
+  .pdf-spinner {
+    width:40px; height:40px; border:4px solid #e0e0e0;
+    border-top-color:var(--navy); border-radius:50%; animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
   /* ======= SEARCH RESULTS ======= */
   #search-area { display: none; }
   .search-result-item {
@@ -480,6 +529,29 @@
     justify-content: center;
   }
   .modal-overlay.open { display: flex; }
+
+  /* ======= BACK TO TOP ======= */
+  #backToTop {
+    position: fixed; bottom: 28px; right: 28px; z-index: 900;
+    width: 46px; height: 46px; border-radius: 50%;
+    background: var(--navy); color: var(--gold);
+    border: 2px solid var(--gold); font-size: 20px;
+    cursor: pointer; display: none; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    transition: all 0.2s; opacity: 0.85;
+  }
+  #backToTop:hover { opacity: 1; transform: translateY(-2px); }
+  #backToTop.visible { display: flex; }
+
+  /* ======= SKELETON LOADER ======= */
+  .skeleton {
+    background: linear-gradient(90deg, #e8eaf0 25%, #f5f6fa 50%, #e8eaf0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 8px;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .skeleton-card { height: 80px; margin-bottom: 12px; border-radius: 12px; }
   .modal-box {
     background: white;
     border-radius: var(--radius);
@@ -558,9 +630,10 @@
         <p>กองบังคับการตำรวจจราจร  กองบัญชาการตำรวจนครบาล</p>
       </div>
     </div>
-    <div class="search-wrap">
-      <input type="text" id="searchInput" placeholder="ค้นหาเอกสาร กฎหมาย คำสั่ง..." onkeyup="handleSearch(event)">
-      <button class="search-btn" onclick="doSearch()">ค้นหา</button>
+    <div class="search-wrap" style="position:relative">
+      <input type="text" id="searchInput" placeholder="ค้นหาเอกสาร กฎหมาย คำสั่ง..." onkeyup="handleSearch(event)" autocomplete="off">
+      <button id="searchClearBtn" onclick="clearSearch()" style="display:none;position:absolute;right:82px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;padding:0 6px;line-height:1">×</button>
+      <button class="search-btn" onclick="doSearch()">🔍</button>
     </div>
     <div class="header-right">
       <button class="btn-admin" onclick="openAdminModal()">⚙️ Admin</button>
@@ -864,12 +937,68 @@ function toggleFaq(el) {
   answer.classList.toggle('open');
 }
 
-// ======== OPEN DOC ========
+// ======== OPEN DOC — PDF Preview Modal ========
 function openDoc(catId, si, di) {
   const cat = currentData.find(c => c.id === catId);
   if (!cat) return;
   const doc = cat.sections[si].docs[di];
-  if (doc.url) window.open(doc.url, '_blank');
+  if (!doc.url) return;
+  openPdfModal(doc.title, doc.url);
+}
+
+function openPdfModal(title, url) {
+  const modal  = document.getElementById('pdfModal');
+  const frame  = document.getElementById('pdfFrame');
+  const loading = document.getElementById('pdfLoading');
+  const titleEl = document.getElementById('pdfModalTitle');
+  const linkEl  = document.getElementById('pdfModalOpenLink');
+
+  titleEl.textContent = title;
+  linkEl.href = url;
+
+  // แปลง Google Drive URL → embed URL
+  let embedUrl = url;
+  const driveMatch = url.match(/\/file\/d\/([^/]+)/);
+  if (driveMatch) {
+    embedUrl = `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+  }
+
+  frame.style.display = 'none';
+  loading.style.display = 'flex';
+  frame.src = embedUrl;
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function onPdfLoaded() {
+  document.getElementById('pdfLoading').style.display = 'none';
+  document.getElementById('pdfFrame').style.display = 'block';
+}
+
+function closePdfModal() {
+  const modal = document.getElementById('pdfModal');
+  const frame = document.getElementById('pdfFrame');
+  modal.classList.remove('open');
+  frame.src = '';
+  document.body.style.overflow = '';
+}
+
+// กด Escape ปิด modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePdfModal();
+});
+
+// ======== BACK TO TOP ========
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('backToTop');
+  if (btn) btn.classList.toggle('visible', window.scrollY > 300);
+});
+
+// ======== SKELETON LOADER ========
+function showSkeleton(containerId, count = 4) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = Array(count).fill('<div class="skeleton skeleton-card"></div>').join('');
 }
 
 // ======== SET ACTIVE NAV ========
@@ -880,8 +1009,21 @@ function setActiveNav(id) {
 }
 
 // ======== SEARCH ========
+let _searchTimer = null;
 function handleSearch(e) {
-  if (e.key === 'Enter') doSearch();
+  if (e.key === 'Escape') { clearSearch(); return; }
+  clearTimeout(_searchTimer);
+  const q = document.getElementById('searchInput').value.trim();
+  const clearBtn = document.getElementById('searchClearBtn');
+  if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
+  if (!q) { showHome(); return; }
+  _searchTimer = setTimeout(doSearch, 300);
+}
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  const clearBtn = document.getElementById('searchClearBtn');
+  if (clearBtn) clearBtn.style.display = 'none';
+  showHome();
 }
 
 function doSearch() {
@@ -921,11 +1063,14 @@ function doSearch() {
   }
 
   container.innerHTML = results.map(r => `
-    <div class="search-result-item" style="border-left-color:${r.cat.color}" onclick="showCat('${r.cat.id}')">
+    <div class="search-result-item" style="border-left-color:${r.cat.color}">
       <div class="search-result-cat">${r.cat.icon} ${r.cat.title} › ${r.sec.title}</div>
       <div class="search-result-title">${highlight(r.doc.title)}</div>
       ${r.isqa ? `<div style="color:#666;font-size:13px;margin-top:4px">${highlight(r.answer.substring(0,100))}...</div>` : ''}
-      ${r.doc.url ? `<span class="doc-badge" style="margin-top:8px">📄 มีเอกสารแนบ</span>` : ''}
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        ${r.doc.url ? `<button onclick="openPdfModal('${r.doc.title.replace(/'/g,"\\'")}','${r.doc.url}')" style="padding:4px 12px;background:var(--navy);color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer">👁 ดูเอกสาร</button>` : ''}
+        <button onclick="showCat('${r.cat.id}')" style="padding:4px 12px;background:var(--gray2);color:var(--navy);border:none;border-radius:6px;font-size:12px;cursor:pointer">📂 ไปหมวดหมู่</button>
+      </div>
     </div>
   `).join('');
 }
@@ -974,6 +1119,28 @@ document.getElementById('adminModal').addEventListener('click', function(e) {
 });
 </script>
 
+<!-- Back to Top -->
+<button id="backToTop" title="กลับขึ้นบน" onclick="window.scrollTo({top:0,behavior:'smooth'})">▲</button>
+
+<!-- PDF Preview Modal -->
+<div id="pdfModal" onclick="if(event.target===this)closePdfModal()">
+  <div class="pdf-modal-box">
+    <div class="pdf-modal-header">
+      <span>📄</span>
+      <span class="pdf-modal-title" id="pdfModalTitle">เอกสาร</span>
+      <div class="pdf-modal-actions">
+        <a id="pdfModalOpenLink" href="#" target="_blank" class="pdf-btn-open">↗ เปิดใหม่</a>
+        <button class="pdf-btn-close" onclick="closePdfModal()">✕ ปิด</button>
+      </div>
+    </div>
+    <div class="pdf-modal-loading" id="pdfLoading">
+      <div class="pdf-spinner"></div>
+      <span>กำลังโหลดเอกสาร...</span>
+    </div>
+    <iframe id="pdfFrame" style="display:none" onload="onPdfLoaded()"></iframe>
+  </div>
+</div>
+
 <!-- Firebase: Visitor Counter + Real-time Categories -->
 <script type="module">
   import { trackVisit, subscribeVisitorCount } from './visitor-counter.js';
@@ -995,6 +1162,17 @@ document.getElementById('adminModal').addEventListener('click', function(e) {
     buildQuickGrid();
     updateStats();
   });
+</script>
+
+<script>
+// ลงทะเบียน Service Worker (PWA)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('SW registered'))
+      .catch(e => console.warn('SW error:', e));
+  });
+}
 </script>
 </body>
 </html>

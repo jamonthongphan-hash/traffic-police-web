@@ -1,0 +1,33 @@
+{
+  "name": "คู่มือตำรวจจราจร",
+  "short_name": "ตร.จราจร",
+  "description": "แหล่งรวมคู่มือ กฎหมาย และเอกสารสำคัญสำหรับตำรวจจราจร กองบังคับการตำรวจจราจร",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D1B4B",
+  "theme_color": "#0D1B4B",
+  "orientation": "any",
+  "lang": "th",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "government"],
+  "shortcuts": [
+    {
+      "name": "มาตรฐานการตั้งจุดตรวจ",
+      "url": "/?cat=checkpoint",
+      "description": "SOP การตั้งจุดตรวจ"
+    }
+  ]
+}
