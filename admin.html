@@ -232,11 +232,88 @@
   .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--blue); }
   .modal-actions { display: flex; gap: 12px; margin-top: 20px; }
 
+  /* ===== MOBILE RESPONSIVE ===== */
+  #mobileMenuBtn { display: none; }
+  #mobileSidebarOverlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 200;
+  }
+  #mobileSidebarOverlay.open { display: block; }
+
   @media (max-width: 768px) {
-    .admin-layout { grid-template-columns: 1fr; }
-    .sidebar { position: static; }
-    .doc-row-fields { grid-template-columns: 1fr; }
-    .stats-row { grid-template-columns: 1fr; }
+    /* Header */
+    .header-inner {
+      padding: 0 12px; height: auto;
+      flex-wrap: wrap; gap: 8px; padding: 10px 12px;
+    }
+    .header-inner h1 { font-size: 15px; flex: 1; }
+    #mobileMenuBtn {
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.15); border: none; color: white;
+      border-radius: 8px; padding: 6px 10px; font-size: 20px; cursor: pointer;
+      order: -1;
+    }
+    /* ซ่อนปุ่มที่ไม่จำเป็นบนมือถือ */
+    .header-inner .btn-outline { display: none; }
+    /* แสดงเฉพาะ Save + ออกจากระบบ */
+    .header-inner .btn-gold,
+    #mobileMenuBtn,
+    #userInfo { display: flex !important; }
+    #userInfo { font-size: 12px; flex: none; max-width: 120px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Layout */
+    .admin-layout { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
+
+    /* Sidebar — slide-in panel */
+    .sidebar {
+      position: fixed !important; left: -280px; top: 0; bottom: 0;
+      width: 270px; z-index: 210; border-radius: 0; height: 100vh !important;
+      transition: left 0.3s ease; box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+      overflow-y: auto;
+    }
+    .sidebar.open { left: 0; }
+
+    /* Stats */
+    .stats-row { grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .stat-card { padding: 12px 8px; }
+    .stat-card .num { font-size: 24px; }
+    .stat-card .lbl { font-size: 11px; }
+
+    /* Doc rows */
+    .doc-row { flex-direction: column; padding: 10px 12px; gap: 8px; }
+    .doc-row-fields { grid-template-columns: 1fr; width: 100%; }
+    .doc-row-num { display: none; }
+    .doc-row-actions { flex-direction: row; padding: 0; }
+
+    /* Section header */
+    .section-card-header { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+    .section-card-header h3 { font-size: 14px; }
+
+    /* Toolbar */
+    .toolbar { padding: 12px; gap: 8px; }
+    .toolbar h2 { font-size: 16px; }
+    .toolbar .btn { font-size: 12px; padding: 6px 12px; }
+
+    /* Input fields */
+    input, textarea, select { font-size: 16px !important; } /* ป้องกัน zoom on iOS */
+
+    /* Mobile bottom action bar */
+    #mobileActionBar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--navy); padding: 10px 16px;
+      display: flex; gap: 8px; z-index: 190;
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.3);
+    }
+    #mobileActionBar .btn { flex: 1; font-size: 13px; padding: 10px 8px; justify-content: center; }
+    .admin-layout { padding-bottom: 80px; }
+
+    /* Category info form */
+    .cat-info-grid { grid-template-columns: 1fr !important; }
+  }
+
+  @media (min-width: 769px) {
+    #mobileActionBar { display: none; }
   }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -263,6 +340,7 @@
 <div id="adminApp">
   <header>
     <div class="header-inner">
+      <button id="mobileMenuBtn" onclick="toggleMobileSidebar()">☰</button>
       <h1>⚙️ Admin Panel — <span>คู่มือตำรวจจราจร</span></h1>
       <span id="userInfo"></span>
       <button class="btn btn-gold" onclick="saveAllData()">💾 บันทึกทั้งหมด</button>
@@ -273,10 +351,23 @@
     </div>
   </header>
 
+  <!-- Mobile Sidebar Overlay -->
+  <div id="mobileSidebarOverlay" onclick="closeMobileSidebar()"></div>
+
+  <!-- Mobile Bottom Action Bar -->
+  <div id="mobileActionBar">
+    <button class="btn btn-gold" onclick="saveAllData()">💾 บันทึก</button>
+    <button class="btn btn-outline" style="border-color:rgba(255,255,255,0.4);color:white" onclick="goHome()">🏠 เว็บ</button>
+    <button class="btn btn-outline" style="border-color:rgba(255,255,255,0.4);color:white" onclick="logout()">🚪 ออก</button>
+  </div>
+
   <div class="admin-layout">
     <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="sidebar-title">📂 หมวดหมู่</div>
+    <aside class="sidebar" id="adminSidebar">
+      <div class="sidebar-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>📂 หมวดหมู่</span>
+        <button onclick="closeMobileSidebar()" style="background:none;border:none;color:var(--gold);font-size:20px;cursor:pointer;display:none" id="sidebarCloseBtn">✕</button>
+      </div>
       <div class="cat-list" id="catList"></div>
     </aside>
 
@@ -401,6 +492,31 @@
 
 <script src="data.js"></script>
 <script>
+// ===== MOBILE SIDEBAR =====
+function toggleMobileSidebar() {
+  const sidebar = document.getElementById('adminSidebar');
+  const overlay = document.getElementById('mobileSidebarOverlay');
+  const closeBtn = document.getElementById('sidebarCloseBtn');
+  const isOpen = sidebar.classList.contains('open');
+  sidebar.classList.toggle('open', !isOpen);
+  overlay.classList.toggle('open', !isOpen);
+  if (closeBtn) closeBtn.style.display = isOpen ? 'none' : 'block';
+  document.body.style.overflow = isOpen ? '' : 'hidden';
+}
+function closeMobileSidebar() {
+  const sidebar = document.getElementById('adminSidebar');
+  const overlay = document.getElementById('mobileSidebarOverlay');
+  const closeBtn = document.getElementById('sidebarCloseBtn');
+  sidebar.classList.remove('open');
+  overlay.classList.remove('open');
+  if (closeBtn) closeBtn.style.display = 'none';
+  document.body.style.overflow = '';
+}
+// ปิด sidebar อัตโนมัติเมื่อเลือกหมวดหมู่บนมือถือ
+function onCatSelect() {
+  if (window.innerWidth <= 768) closeMobileSidebar();
+}
+
 // ===== STATE =====
 let adminData = null;
 let currentCatId = null;
@@ -602,7 +718,7 @@ function buildSidebar(profile) {
     const item = document.createElement('div');
     item.className = 'cat-item' + (currentCatId === cat.id ? ' active' : '');
     item.innerHTML = `<span>${cat.icon}</span> ${cat.title} <span class="badge">${docCount}</span>`;
-    item.onclick = () => editCat(cat.id);
+    item.onclick = () => { editCat(cat.id); onCatSelect(); };
     list.appendChild(item);
   });
   if (canAdd) {

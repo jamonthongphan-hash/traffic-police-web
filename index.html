@@ -984,30 +984,18 @@ function showCat(catId) {
   cat.sections.forEach((sec, si) => {
     const block = document.createElement('div');
     block.className = 'doc-section';
+    const isFirst = si === 0;
+    // Lazy: render docList เฉพาะ section แรก, ที่เหลือรอ toggle
     block.innerHTML = `
-      <div class="doc-section-header open" style="background:linear-gradient(135deg,${cat.color},${cat.color}cc)" onclick="toggleSection(this)">
+      <div class="doc-section-header ${isFirst ? 'open' : ''}"
+           style="background:linear-gradient(135deg,${cat.color},${cat.color}cc)"
+           onclick="toggleSection(this,'${catId}',${si})">
         <span>📁 ${sec.title}</span>
-        <span class="toggle-icon">▼</span>
+        <span class="section-doc-count" style="font-size:12px;opacity:0.85;margin-left:8px">(${sec.docs.length})</span>
+        <span class="toggle-icon" style="margin-left:auto">▼</span>
       </div>
-      <div class="doc-list" id="docList-${catId}-${si}">
-        ${sec.docs.map((doc, di) => `
-          <div class="doc-item" onclick="openDoc('${catId}','${si}','${di}')">
-            <div class="doc-item-icon">${doc.url ? '📄' : '📌'}</div>
-            <div class="doc-item-text">
-              <div class="doc-item-title">
-                ${doc.url
-                  ? `<a href="${doc.url}" target="_blank" onclick="event.stopPropagation()">${doc.title}</a>`
-                  : doc.title}
-              </div>
-              ${!doc.url ? '<span class="no-link">⏳ กำลังดำเนินการอัปโหลดเอกสาร</span>' : ''}
-              ${doc.url ? '<span class="doc-badge">📥 ดาวน์โหลด / ดูเอกสาร</span>' : ''}
-            </div>
-            ${doc.url ? `
-            <button class="copy-link-btn" title="คัดลอกลิงก์" onclick="event.stopPropagation();copyLink(this,'${doc.url}')">
-              <span class="copy-icon">🔗</span>
-            </button>` : ''}
-          </div>
-        `).join('')}
+      <div class="doc-list" id="docList-${catId}-${si}" ${isFirst ? '' : 'style="display:none"'} data-loaded="${isFirst}">
+        ${isFirst ? renderDocList(sec.docs, catId, si) : '<div class="lazy-placeholder" style="padding:20px;text-align:center;color:#aaa">กำลังโหลด...</div>'}
       </div>
     `;
     content.appendChild(block);
@@ -1042,16 +1030,46 @@ function openSop() {
   if (url) window.open(url, '_blank');
 }
 
-// ======== TOGGLE SECTION ========
-function toggleSection(header) {
-  const listId = header.nextElementSibling.id;
-  const list = document.getElementById(listId);
+// ======== RENDER DOC LIST (reusable) ========
+function renderDocList(docs, catId, si) {
+  if (!docs || docs.length === 0) return '<div style="padding:16px;color:#aaa;text-align:center">ไม่มีเอกสารในหมวดย่อยนี้</div>';
+  return docs.map((doc, di) => `
+    <div class="doc-item" onclick="openDoc('${catId}','${si}','${di}')">
+      <div class="doc-item-icon">${doc.url ? '📄' : '📌'}</div>
+      <div class="doc-item-text">
+        <div class="doc-item-title">
+          ${doc.url
+            ? `<a href="${doc.url}" target="_blank" onclick="event.stopPropagation()">${doc.title}</a>`
+            : doc.title}
+        </div>
+        ${!doc.url ? '<span class="no-link">⏳ กำลังดำเนินการอัปโหลดเอกสาร</span>' : ''}
+        ${doc.url ? '<span class="doc-badge">📥 ดาวน์โหลด / ดูเอกสาร</span>' : ''}
+      </div>
+      ${doc.url ? `
+      <button class="copy-link-btn" title="คัดลอกลิงก์" onclick="event.stopPropagation();copyLink(this,'${doc.url}')">
+        <span class="copy-icon">🔗</span>
+      </button>` : ''}
+    </div>
+  `).join('');
+}
+
+// ======== TOGGLE SECTION (Lazy Load) ========
+function toggleSection(header, catId, si) {
+  const list = header.nextElementSibling;
   if (!list) return;
   const isOpen = header.classList.contains('open');
   if (isOpen) {
     list.style.display = 'none';
     header.classList.remove('open');
   } else {
+    // Lazy render: render docs ครั้งแรกที่เปิด
+    if (list.dataset.loaded === 'false') {
+      const cat = currentData.find(c => c.id === catId);
+      if (cat && cat.sections[si]) {
+        list.innerHTML = renderDocList(cat.sections[si].docs, catId, si);
+        list.dataset.loaded = 'true';
+      }
+    }
     list.style.display = 'block';
     header.classList.add('open');
   }
