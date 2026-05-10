@@ -34,7 +34,33 @@
     --shadow: 0 4px 24px rgba(13,27,75,0.10);
     --radius: 12px;
     --radius2: 8px;
+    --bg-page: #f5f6fa;
+    --bg-card: #ffffff;
+    --border: #e8eaf0;
   }
+  [data-theme="dark"] {
+    --gray: #181c2a;
+    --gray2: #242840;
+    --bg-page: #12152a;
+    --bg-card: #1e2235;
+    --border: #2e3250;
+    --text: #e8eaf8;
+    --text2: #9ba3c8;
+    --lightblue: #1a2340;
+    --shadow: 0 4px 24px rgba(0,0,0,0.35);
+  }
+  [data-theme="dark"] body { background: var(--bg-page); color: var(--text); }
+  [data-theme="dark"] .quick-card,
+  [data-theme="dark"] .doc-section,
+  [data-theme="dark"] .doc-item,
+  [data-theme="dark"] .faq-item,
+  [data-theme="dark"] .search-result-item,
+  [data-theme="dark"] .recent-item { background: var(--bg-card) !important; color: var(--text); }
+  [data-theme="dark"] .doc-item-title a { color: #90caf9; }
+  [data-theme="dark"] .doc-list { background: var(--bg-card); }
+  [data-theme="dark"] .copy-link-btn { border-color: var(--border); color: var(--text2); }
+  [data-theme="dark"] .faq-answer { background: #242840; color: var(--text); }
+  [data-theme="dark"] footer { background: #0a0d1a; }
   html { scroll-behavior: smooth; }
   body {
     font-family: 'Sarabun', 'Noto Sans Thai', Arial, sans-serif;
@@ -435,6 +461,37 @@
   }
   .faq-answer.open { max-height: 300px; padding: 0 24px 16px; }
 
+  /* ======= RECENT DOCUMENTS ======= */
+  .recent-item {
+    display: flex; align-items: center; gap: 12px;
+    background: white; border-radius: 12px; padding: 12px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer;
+    border-left: 4px solid var(--blue); transition: box-shadow 0.2s;
+  }
+  .recent-item:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+  .recent-item-icon { font-size: 20px; flex-shrink: 0; }
+  .recent-item-info { flex: 1; min-width: 0; }
+  .recent-item-title { font-weight: 600; font-size: 14px; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .recent-item-cat { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .recent-item-badge { font-size: 11px; background: var(--navy); color: white; border-radius: 6px; padding: 2px 8px; flex-shrink: 0; }
+
+  /* ======= BREADCRUMB ======= */
+  #breadcrumb a { color: var(--blue); text-decoration: none; }
+  #breadcrumb a:hover { text-decoration: underline; }
+  #breadcrumb .bc-sep { color: #bbb; font-size: 12px; }
+  #breadcrumb .bc-current { color: var(--navy); font-weight: 600; }
+
+  /* ======= COPY LINK BUTTON ======= */
+  .copy-link-btn {
+    flex-shrink: 0; background: none; border: 1.5px solid #dde3f0;
+    border-radius: 8px; padding: 6px 10px; cursor: pointer;
+    font-size: 16px; color: var(--text2); transition: all 0.18s;
+    display: flex; align-items: center; gap: 4px; white-space: nowrap;
+  }
+  .copy-link-btn:hover { background: var(--navy); border-color: var(--navy); color: white; }
+  .copy-link-btn.copied { background: #2e7d32; border-color: #2e7d32; color: white; }
+  .copy-link-btn .copy-label { font-size: 12px; font-weight: 600; }
+
   /* ======= PDF PREVIEW MODAL ======= */
   #pdfModal {
     display:none; position:fixed; inset:0; z-index:9999;
@@ -635,7 +692,9 @@
       <button id="searchClearBtn" onclick="clearSearch()" style="display:none;position:absolute;right:82px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.7);font-size:18px;cursor:pointer;padding:0 6px;line-height:1">×</button>
       <button class="search-btn" onclick="doSearch()">🔍</button>
     </div>
-    <div class="header-right">
+    <div class="header-right" style="display:flex;gap:8px;align-items:center">
+      <button id="darkModeBtn" onclick="toggleDark()" title="สลับโหมดกลางคืน"
+        style="background:rgba(255,255,255,0.12);border:none;border-radius:8px;padding:6px 10px;font-size:18px;cursor:pointer;color:white;transition:background 0.2s">🌙</button>
       <button class="btn-admin" onclick="openAdminModal()">⚙️ Admin</button>
     </div>
   </div>
@@ -664,6 +723,14 @@
 
   <!-- HOME AREA -->
   <div id="home-area">
+    <!-- Recent Documents -->
+    <div id="recentSection" style="display:none;margin-bottom:28px">
+      <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+        <h3>🕐 เพิ่มล่าสุด</h3>
+        <span id="recentUpdated" style="font-size:12px;color:var(--text2)"></span>
+      </div>
+      <div id="recentList" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
     <div class="section-title"><h3>📂 หมวดหมู่ทั้งหมด</h3></div>
     <div class="quick-grid" id="quickGrid"></div>
   </div>
@@ -673,6 +740,7 @@
     <div class="page-header" id="pageHeader">
       <div class="page-header-icon" id="pageIcon"></div>
       <div style="flex:1">
+        <nav id="breadcrumb" aria-label="breadcrumb" style="font-size:13px;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"></nav>
         <h2 id="pageTitle"></h2>
         <p id="pageDesc"></p>
       </div>
@@ -756,6 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
   buildNav();
   buildQuickGrid();
   updateStats();
+  buildRecent();
 });
 
 function updateStats() {
@@ -837,6 +906,7 @@ function showCat(catId) {
   document.getElementById('heroSection').style.display = 'none';
 
   setActiveNav('nav-' + catId);
+  setBreadcrumb(cat);
 
   // Page Header
   document.getElementById('pageIcon').textContent = cat.icon;
@@ -880,6 +950,10 @@ function showCat(catId) {
               ${!doc.url ? '<span class="no-link">⏳ กำลังดำเนินการอัปโหลดเอกสาร</span>' : ''}
               ${doc.url ? '<span class="doc-badge">📥 ดาวน์โหลด / ดูเอกสาร</span>' : ''}
             </div>
+            ${doc.url ? `
+            <button class="copy-link-btn" title="คัดลอกลิงก์" onclick="event.stopPropagation();copyLink(this,'${doc.url}')">
+              <span class="copy-icon">🔗</span>
+            </button>` : ''}
           </div>
         `).join('')}
       </div>
@@ -987,6 +1061,90 @@ function closePdfModal() {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closePdfModal();
 });
+
+// ======== DARK MODE ========
+function toggleDark() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  setDark(!isDark);
+}
+function setDark(on) {
+  document.documentElement.setAttribute('data-theme', on ? 'dark' : 'light');
+  localStorage.setItem('theme', on ? 'dark' : 'light');
+  const btn = document.getElementById('darkModeBtn');
+  if (btn) btn.textContent = on ? '☀️' : '🌙';
+}
+// โหลด theme จาก localStorage หรือตาม system preference
+(function initTheme() {
+  const saved = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  setDark(saved === 'dark' || (!saved && prefersDark));
+})();
+
+// ======== RECENT DOCUMENTS ========
+function buildRecent() {
+  const all = [];
+  currentData.forEach(cat => {
+    cat.sections.forEach(sec => {
+      sec.docs.forEach(doc => {
+        if (doc.url) all.push({ cat, sec, doc });
+      });
+    });
+  });
+  // แสดง 5 รายการล่าสุด (ตามลำดับที่เพิ่มในระบบ — ท้ายสุดของข้อมูล)
+  const recent = all.slice(-5).reverse();
+  const section = document.getElementById('recentSection');
+  const list = document.getElementById('recentList');
+  if (!section || !list || recent.length === 0) return;
+  section.style.display = 'block';
+  list.innerHTML = recent.map(r => `
+    <div class="recent-item" style="border-left-color:${r.cat.color}"
+         onclick="showCat('${r.cat.id}')">
+      <div class="recent-item-icon">${r.cat.icon || '📄'}</div>
+      <div class="recent-item-info">
+        <div class="recent-item-title">${r.doc.title}</div>
+        <div class="recent-item-cat">${r.cat.title} › ${r.sec.title}</div>
+      </div>
+      <span class="recent-item-badge">ดูเอกสาร</span>
+    </div>
+  `).join('');
+  const upd = document.getElementById('recentUpdated');
+  if (upd) upd.textContent = `อัปเดต ${new Date().toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'})}`;
+}
+
+// ======== BREADCRUMB ========
+function setBreadcrumb(cat) {
+  const bc = document.getElementById('breadcrumb');
+  if (!bc) return;
+  bc.innerHTML = `
+    <a href="#" onclick="showHome();return false;">🏠 หน้าหลัก</a>
+    <span class="bc-sep">›</span>
+    <span class="bc-current">${cat.icon || ''} ${cat.title}</span>
+  `;
+}
+
+// ======== COPY LINK ========
+function copyLink(btn, url) {
+  navigator.clipboard.writeText(url).then(() => {
+    btn.classList.add('copied');
+    btn.innerHTML = '<span class="copy-icon">✅</span><span class="copy-label">คัดลอกแล้ว</span>';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '<span class="copy-icon">🔗</span>';
+    }, 2000);
+  }).catch(() => {
+    // fallback สำหรับ browser เก่า
+    const ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.classList.add('copied');
+    btn.innerHTML = '<span class="copy-icon">✅</span><span class="copy-label">คัดลอกแล้ว</span>';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '<span class="copy-icon">🔗</span>';
+    }, 2000);
+  });
+}
 
 // ======== BACK TO TOP ========
 window.addEventListener('scroll', () => {
@@ -1161,6 +1319,7 @@ document.getElementById('adminModal').addEventListener('click', function(e) {
     buildNav();
     buildQuickGrid();
     updateStats();
+    buildRecent();
   });
 </script>
 
