@@ -315,6 +315,53 @@
   @media (min-width: 769px) {
     #mobileActionBar { display: none; }
   }
+
+  /* ===== DASHBOARD PANELS ===== */
+  .dash-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;
+  }
+  .dash-panel {
+    background: white; border-radius: 12px;
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .dash-panel-header {
+    background: var(--navy); color: var(--gold);
+    padding: 12px 18px; font-weight: 700; font-size: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .dash-panel-body { padding: 0; max-height: 380px; overflow-y: auto; }
+  .log-item {
+    padding: 10px 16px; border-bottom: 1px solid #f0f2f8;
+    display: flex; gap: 10px; align-items: flex-start;
+    transition: background 0.15s;
+  }
+  .log-item:hover { background: #f8f9ff; }
+  .log-item:last-child { border-bottom: none; }
+  .log-time {
+    font-size: 11px; color: #888; white-space: nowrap;
+    min-width: 76px; margin-top: 2px; line-height: 1.4;
+  }
+  .log-content { flex: 1; }
+  .log-who { font-size: 12px; font-weight: 700; color: var(--navy); }
+  .log-what { font-size: 13px; color: #333; margin-top: 2px; }
+  .log-detail { font-size: 11px; color: #888; margin-top: 2px; }
+  .ver-item {
+    padding: 10px 16px; border-bottom: 1px solid #f0f2f8;
+    display: flex; gap: 10px; align-items: center;
+    transition: background 0.15s;
+  }
+  .ver-item:hover { background: #f8f9ff; }
+  .ver-item:last-child { border-bottom: none; }
+  .ver-info { flex: 1; }
+  .ver-by { font-size: 13px; font-weight: 700; color: var(--navy); }
+  .ver-time { font-size: 11px; color: #888; margin-top: 2px; }
+  .ver-stats { font-size: 11px; color: #666; margin-top: 2px; }
+  .empty-state {
+    padding: 32px; text-align: center; color: #aaa; font-size: 14px;
+  }
+  @media (max-width: 768px) {
+    .dash-grid { grid-template-columns: 1fr; }
+  }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -377,6 +424,11 @@
       <div id="dashView">
         <div class="toolbar"><h2>📊 ภาพรวม</h2></div>
         <div class="stats-row" id="dashStats"></div>
+        <!-- Activity Log + Version History -->
+        <div class="dash-grid">
+          <div id="activityPanel"></div>
+          <div id="versionPanel"></div>
+        </div>
         <div class="export-panel" id="importPanel">
           <h3>📥 นำเข้าข้อมูล (Import data.js)</h3>
           <p>วางข้อมูล JSON จากไฟล์ data.js เพื่ออัปเดตข้อมูลทั้งหมด จากนั้นกดปุ่มนำเข้า</p>
@@ -681,20 +733,28 @@ function enterAdminApp(profile) {
       adminData = JSON.parse(JSON.stringify(data || loadData()));
       buildSidebar(profile);
       showDashboard();
+      // บันทึก log login หลังจากโหลดข้อมูลเสร็จ
+      setTimeout(() => writeLog('login', 'system', `${profile.rank ? profile.rank + ' ' : ''}${profile.name}`, profile.role), 500);
     }).catch(() => {
       adminData = JSON.parse(JSON.stringify(loadData()));
       buildSidebar(profile);
       showDashboard();
+      setTimeout(() => writeLog('login', 'system', `${profile.rank ? profile.rank + ' ' : ''}${profile.name}`, profile.role), 500);
     });
   } else {
     adminData = JSON.parse(JSON.stringify(loadData()));
     buildSidebar(profile);
     showDashboard();
+    setTimeout(() => writeLog('login', 'system', `${profile.rank ? profile.rank + ' ' : ''}${profile.name}`, profile.role), 500);
   }
 }
 
 async function logout() {
   if (!confirm('ออกจากระบบ?')) return;
+  // บันทึก log ก่อน logout
+  if (currentUserProfile) {
+    await writeLog('logout', 'system', `${currentUserProfile.rank ? currentUserProfile.rank + ' ' : ''}${currentUserProfile.name}`, currentUserProfile.role);
+  }
   try {
     const { logoutAdmin } = await import('./auth.js');
     await logoutAdmin();
@@ -730,13 +790,14 @@ function buildSidebar(profile) {
 }
 
 // ===== DASHBOARD =====
-function showDashboard() {
+async function showDashboard() {
   currentCatId = null;
   buildSidebar();
   document.getElementById('dashView').style.display = 'block';
   document.getElementById('catEditor').style.display = 'none';
   document.getElementById('exportView').style.display = 'none';
 
+  // Stats
   let totalDocs = 0, totalSecs = 0;
   adminData.forEach(c => { c.sections.forEach(s => { totalSecs++; totalDocs += s.docs.length; }); });
   document.getElementById('dashStats').innerHTML = `
@@ -750,6 +811,87 @@ function showDashboard() {
       <div class="num">${totalDocs}</div><div class="lbl">เอกสารทั้งหมด</div>
     </div>
   `;
+
+  // Loading state
+  const loadingHtml = (title) => `<div class="dash-panel">
+    <div class="dash-panel-header"><span>${title}</span></div>
+    <div class="dash-panel-body"><div class="empty-state">⏳ กำลังโหลด...</div></div>
+  </div>`;
+  document.getElementById('activityPanel').innerHTML = loadingHtml('📋 กิจกรรมล่าสุด');
+  document.getElementById('versionPanel').innerHTML  = loadingHtml('🕐 ประวัติการบันทึก');
+
+  try {
+    const [logs, versions] = await Promise.all([
+      window._getActivityLogs ? window._getActivityLogs(25) : Promise.resolve([]),
+      window._getVersions     ? window._getVersions(10)     : Promise.resolve([])
+    ]);
+
+    // ── Activity Log ──
+    const logRows = logs.length === 0
+      ? '<div class="empty-state">ยังไม่มีกิจกรรมที่บันทึกไว้</div>'
+      : logs.map(log => {
+          const fmt = window._formatLog ? window._formatLog(log) : { who: log.name || log.uid, what: log.action, detail: log.detail };
+          const ts  = log.timestamp?.toDate ? log.timestamp.toDate() : new Date(log.timestamp || 0);
+          const d   = ts.toLocaleDateString('th-TH', { day:'2-digit', month:'short' });
+          const t   = ts.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+          return `<div class="log-item">
+            <div class="log-time">${d}<br>${t}</div>
+            <div class="log-content">
+              <div class="log-who">👤 ${escHtml(fmt.who)}</div>
+              <div class="log-what">${escHtml(fmt.what)}</div>
+              ${fmt.detail ? `<div class="log-detail">💬 ${escHtml(fmt.detail)}</div>` : ''}
+            </div>
+          </div>`;
+        }).join('');
+
+    document.getElementById('activityPanel').innerHTML = `<div class="dash-panel">
+      <div class="dash-panel-header">
+        <span>📋 กิจกรรมล่าสุด</span>
+        <span style="font-size:11px;opacity:0.75;font-weight:400">${logs.length} รายการ</span>
+      </div>
+      <div class="dash-panel-body">${logRows}</div>
+    </div>`;
+
+    // ── Version History ──
+    const verRows = versions.length === 0
+      ? '<div class="empty-state">ยังไม่มีประวัติการบันทึก<br><small>กด 💾 บันทึกทั้งหมด เพื่อสร้าง snapshot แรก</small></div>'
+      : versions.map((ver, i) => {
+          const ts      = ver.timestamp?.toDate ? ver.timestamp.toDate() : new Date(ver.timestamp || 0);
+          const dateStr = ts.toLocaleDateString('th-TH', { day:'2-digit', month:'short', year:'2-digit' });
+          const timeStr = ts.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+          const badge   = i === 0
+            ? '<span style="font-size:11px;color:#2e7d32;font-weight:700;background:#e8f5e9;padding:2px 8px;border-radius:10px">✅ ล่าสุด</span>'
+            : `<button class="btn btn-sm" style="background:#fff8e1;color:#856404;border:1px solid #ffc107;white-space:nowrap"
+                onclick="restoreVersionById('${ver.id}','${escHtml(ver.savedBy)}','${dateStr} ${timeStr}')">↩️ คืนค่า</button>`;
+          return `<div class="ver-item">
+            <div class="ver-info">
+              <div class="ver-by">💾 ${escHtml(ver.savedBy)}</div>
+              <div class="ver-time">🕐 ${dateStr} ${timeStr}</div>
+              <div class="ver-stats">${ver.totalCats||0} หมวด · ${ver.totalDocs||0} เอกสาร</div>
+            </div>
+            ${badge}
+          </div>`;
+        }).join('');
+
+    document.getElementById('versionPanel').innerHTML = `<div class="dash-panel">
+      <div class="dash-panel-header">
+        <span>🕐 ประวัติการบันทึก</span>
+        <span style="font-size:11px;opacity:0.75;font-weight:400">${versions.length} เวอร์ชัน</span>
+      </div>
+      <div class="dash-panel-body">${verRows}</div>
+    </div>`;
+
+  } catch(e) {
+    console.warn('Dashboard load error:', e);
+    document.getElementById('activityPanel').innerHTML = `<div class="dash-panel">
+      <div class="dash-panel-header"><span>📋 กิจกรรมล่าสุด</span></div>
+      <div class="dash-panel-body"><div class="empty-state">⚠️ โหลดไม่ได้<br><small>${e.message}</small></div></div>
+    </div>`;
+    document.getElementById('versionPanel').innerHTML = `<div class="dash-panel">
+      <div class="dash-panel-header"><span>🕐 ประวัติการบันทึก</span></div>
+      <div class="dash-panel-body"><div class="empty-state">⚠️ โหลดไม่ได้</div></div>
+    </div>`;
+  }
 }
 
 // ===== EDIT CATEGORY =====
@@ -1007,10 +1149,39 @@ function confirmAddFaq() {
 }
 
 // ===== SAVE =====
-function saveAllData() {
+async function saveAllData() {
+  // บันทึก snapshot ก่อนทับข้อมูล
+  if (window._saveVersion && currentUserProfile) {
+    window._saveVersion(adminData, currentUserProfile).catch(() => {});
+  }
   saveData(adminData);
+  let totalDocs = 0;
+  adminData.forEach(c => c.sections.forEach(s => { totalDocs += s.docs.length; }));
+  writeLog('save_all', 'system', 'ทั้งหมด', adminData.length + ' หมวดหมู่ · ' + totalDocs + ' เอกสาร');
   buildSidebar();
   toast('💾 บันทึกข้อมูลสำเร็จ!');
+}
+
+// ===== RESTORE VERSION =====
+async function restoreVersionById(versionId, savedBy, timeStr) {
+  if (!confirm(`คืนค่าข้อมูลไปเป็นเวอร์ชันที่บันทึกโดย:\n${savedBy}\nเวลา: ${timeStr}\n\nข้อมูลปัจจุบันจะถูกแทนที่ (ระบบจะเก็บ snapshot ปัจจุบันก่อน)`)) return;
+  try {
+    if (!window._restoreVersion) { toast('❌ ฟังก์ชัน restoreVersion ยังไม่พร้อม'); return; }
+    // เก็บ snapshot ข้อมูลปัจจุบันก่อน restore
+    if (window._saveVersion && currentUserProfile) {
+      await window._saveVersion(adminData, currentUserProfile).catch(() => {});
+    }
+    const data = await window._restoreVersion(versionId);
+    if (!data || !Array.isArray(data)) { toast('❌ ข้อมูลเวอร์ชันไม่สมบูรณ์'); return; }
+    adminData = data;
+    saveData(adminData);
+    writeLog('edit', 'system', 'คืนค่าเวอร์ชัน', 'โดย ' + savedBy + ' · ' + timeStr);
+    buildSidebar();
+    await showDashboard();
+    toast('↩️ คืนค่าข้อมูลสำเร็จ — เวอร์ชันของ ' + savedBy);
+  } catch(e) {
+    toast('❌ เกิดข้อผิดพลาด: ' + e.message);
+  }
 }
 
 // ===== EXPORT =====
@@ -1128,12 +1299,17 @@ window._roleLabels = {
 
 <script type="module">
   import { onAuthChange } from './auth.js';
-  import { logActivity } from './activity-log.js';
+  import { logActivity, getActivityLogs, formatLog, saveVersion, getVersions, restoreVersion } from './activity-log.js';
   import { saveCategories, loadCategories } from './data-store.js';
   // expose ให้ regular script เรียกได้
-  window._logActivity    = logActivity;
-  window._saveCategories = saveCategories;
-  window._loadCategories = loadCategories;
+  window._logActivity     = logActivity;
+  window._getActivityLogs = getActivityLogs;
+  window._formatLog       = formatLog;
+  window._saveVersion     = saveVersion;
+  window._getVersions     = getVersions;
+  window._restoreVersion  = restoreVersion;
+  window._saveCategories  = saveCategories;
+  window._loadCategories  = loadCategories;
 
   onAuthChange((user, profile) => {
     if (user && profile && profile.role !== 'pending') {

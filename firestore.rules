@@ -36,14 +36,64 @@ service cloud.firestore {
       // admin ที่ approved เขียนได้
       allow create: if request.auth != null &&
                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approved == true;
-      // อ่านได้เฉพาะ super_admin
-      allow read: if isSuperAdmin();
+      // admin ที่ approved อ่านได้ (ทุกระดับ ไม่ใช่แค่ super_admin)
+      allow read: if request.auth != null &&
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approved == true;
+    }
+
+    // ===== Version History =====
+    match /versions/{versionId} {
+      // admin ที่ approved สร้าง snapshot ได้
+      allow create: if request.auth != null &&
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approved == true;
+      // admin ที่ approved อ่านและกู้คืนได้
+      allow read: if request.auth != null &&
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approved == true;
+      // ลบ version เก่า (pruning) — admin ที่ approved ทำได้
+      allow delete: if request.auth != null &&
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approved == true;
+    }
+
+    // ===== 1197 Dashboard Users =====
+    match /users_1197/_config {
+      // ผู้ใช้ที่ login แล้วอ่าน/เขียน config bootstrap ได้
+      allow read, write: if request.auth != null;
+    }
+
+    match /users_1197/{uid} {
+      // สมัครสมาชิก: สร้าง record ตัวเองได้
+      allow create: if request.auth != null && request.auth.uid == uid;
+
+      // อ่านข้อมูลตัวเอง หรือ admin 1197 อ่านได้ทุกคน
+      allow read: if request.auth != null &&
+                    (request.auth.uid == uid || isAdmin1197());
+
+      // admin อัปเดตได้
+      allow update: if isAdmin1197();
+
+      // admin ลบได้
+      allow delete: if isAdmin1197();
+    }
+
+    // ===== Activity Logs 1197 =====
+    match /activityLogs_1197/{logId} {
+      // ผู้ใช้ที่ approved เขียน log ได้
+      allow create: if request.auth != null &&
+                      get(/databases/$(database)/documents/users_1197/$(request.auth.uid)).data.status == 'approved';
+      // admin อ่านได้
+      allow read: if isAdmin1197();
     }
 
     // ===== Helper Functions =====
     function isSuperAdmin() {
       return request.auth != null &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
+    }
+
+    function isAdmin1197() {
+      return request.auth != null &&
+             get(/databases/$(database)/documents/users_1197/$(request.auth.uid)).data.role == 'admin' &&
+             get(/databases/$(database)/documents/users_1197/$(request.auth.uid)).data.status == 'approved';
     }
 
   }
