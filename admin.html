@@ -316,6 +316,22 @@
     #mobileActionBar { display: none; }
   }
 
+  /* ===== DATA CHANGED BANNER ===== */
+  #dataChangedBanner {
+    display: none; background: #FFF3CD;
+    border-bottom: 3px solid #FFC107;
+    padding: 10px 20px;
+    position: sticky; top: 64px; z-index: 98;
+    display: none; align-items: center; gap: 12px; flex-wrap: wrap;
+    font-size: 14px; font-weight: 600; color: #856404;
+  }
+  #dataChangedBanner.show { display: flex; }
+  #dataChangedBanner .banner-msg { flex: 1; min-width: 200px; }
+  #dataChangedBanner .banner-btn {
+    padding: 6px 14px; border-radius: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 700; border: none; white-space: nowrap;
+  }
+
   /* ===== DASHBOARD PANELS ===== */
   .dash-grid {
     display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;
@@ -397,6 +413,13 @@
       <button class="btn btn-outline" onclick="logout()">🚪 ออกจากระบบ</button>
     </div>
   </header>
+
+  <!-- Data Changed Warning Banner -->
+  <div id="dataChangedBanner">
+    <span class="banner-msg" id="dataChangedMsg">⚠️ มี admin อื่นบันทึกข้อมูลใหม่ขณะที่คุณกำลังแก้ไขอยู่ กรุณาโหลดข้อมูลใหม่ก่อนบันทึก</span>
+    <button class="banner-btn" style="background:#856404;color:white" onclick="reloadAdminData()">🔄 โหลดข้อมูลล่าสุด</button>
+    <button class="banner-btn" style="background:transparent;border:1.5px solid #856404;color:#856404" onclick="document.getElementById('dataChangedBanner').classList.remove('show')">✕ ปิด</button>
+  </div>
 
   <!-- Mobile Sidebar Overlay -->
   <div id="mobileSidebarOverlay" onclick="closeMobileSidebar()"></div>
@@ -1150,6 +1173,47 @@ function confirmAddFaq() {
 
 // ===== SAVE =====
 async function saveAllData() {
+  // ── ป้องกันข้อมูลทับกัน: โหลด Firestore ล่าสุดก่อน แล้ว merge ──
+  if (window._loadCategories) {
+    try {
+      const latest = await window._loadCategories();
+      if (latest && latest.length) {
+        let mergedCats = 0, mergedDocs = 0;
+
+        // 1) หมวดหมู่ใหม่ที่ admin อื่นเพิ่มไว้ (ไม่มีใน adminData ของเรา)
+        const ourIds = new Set(adminData.map(c => c.id));
+        const newCats = latest.filter(c => !ourIds.has(c.id));
+        if (newCats.length > 0) {
+          adminData = [...adminData, ...newCats];
+          mergedCats = newCats.length;
+        }
+
+        // 2) เอกสารใหม่ในหมวดหมู่ที่มีอยู่ (admin อื่นเพิ่ม URL ที่เราไม่มี)
+        latest.forEach(latestCat => {
+          const ourCat = adminData.find(c => c.id === latestCat.id);
+          if (!ourCat) return;
+          latestCat.sections.forEach((latestSec, si) => {
+            if (!ourCat.sections[si]) return;
+            latestSec.docs.forEach(ld => {
+              if (!ld.url) return;
+              const exists = ourCat.sections[si].docs.some(od => od.url === ld.url);
+              if (!exists) {
+                ourCat.sections[si].docs.push({ title: ld.title, url: ld.url });
+                mergedDocs++;
+              }
+            });
+          });
+        });
+
+        if (mergedCats > 0 || mergedDocs > 0) {
+          buildSidebar();
+          toast(`🔀 รวมข้อมูลจาก admin อื่น: ${mergedCats} หมวด + ${mergedDocs} เอกสาร`);
+          await new Promise(r => setTimeout(r, 800)); // ให้ toast แสดงก่อน
+        }
+      }
+    } catch(e) { /* โหลดไม่ได้ก็บันทึกต่อ */ }
+  }
+
   // บันทึก snapshot ก่อนทับข้อมูล
   if (window._saveVersion && currentUserProfile) {
     window._saveVersion(adminData, currentUserProfile).catch(() => {});
@@ -1159,7 +1223,26 @@ async function saveAllData() {
   adminData.forEach(c => c.sections.forEach(s => { totalDocs += s.docs.length; }));
   writeLog('save_all', 'system', 'ทั้งหมด', adminData.length + ' หมวดหมู่ · ' + totalDocs + ' เอกสาร');
   buildSidebar();
+  document.getElementById('dataChangedBanner').classList.remove('show');
   toast('💾 บันทึกข้อมูลสำเร็จ!');
+}
+
+// ===== RELOAD LATEST FROM FIRESTORE =====
+async function reloadAdminData() {
+  if (!window._loadCategories) return;
+  try {
+    const latest = await window._loadCategories();
+    if (latest && latest.length) {
+      adminData = JSON.parse(JSON.stringify(latest));
+      buildSidebar();
+      if (currentCatId) editCat(currentCatId);
+      else await showDashboard();
+      document.getElementById('dataChangedBanner').classList.remove('show');
+      toast('🔄 โหลดข้อมูลล่าสุดแล้ว — ข้อมูลทันสมัยที่สุด');
+    }
+  } catch(e) {
+    toast('❌ โหลดไม่ได้: ' + e.message);
+  }
 }
 
 // ===== RESTORE VERSION =====
@@ -1300,7 +1383,8 @@ window._roleLabels = {
 <script type="module">
   import { onAuthChange } from './auth.js';
   import { logActivity, getActivityLogs, formatLog, saveVersion, getVersions, restoreVersion } from './activity-log.js';
-  import { saveCategories, loadCategories } from './data-store.js';
+  import { saveCategories, loadCategories, subscribeCategories } from './data-store.js';
+
   // expose ให้ regular script เรียกได้
   window._logActivity     = logActivity;
   window._getActivityLogs = getActivityLogs;
@@ -1310,6 +1394,19 @@ window._roleLabels = {
   window._restoreVersion  = restoreVersion;
   window._saveCategories  = saveCategories;
   window._loadCategories  = loadCategories;
+
+  // ── Real-time watch: ตรวจจับเมื่อ admin อื่นบันทึกข้อมูล ──
+  let firestoreSnapshotCount = 0;
+  subscribeCategories(data => {
+    firestoreSnapshotCount++;
+    // snapshot แรกคือตอน login — ไม่ต้องแจ้งเตือน
+    if (firestoreSnapshotCount <= 1) return;
+    // snapshot ถัดไป = admin อื่นบันทึกข้อมูลใหม่
+    const banner = document.getElementById('dataChangedBanner');
+    if (banner) banner.classList.add('show');
+    // เก็บข้อมูลล่าสุดไว้ให้ reloadAdminData ใช้
+    window._latestFirestoreData = data;
+  });
 
   onAuthChange((user, profile) => {
     if (user && profile && profile.role !== 'pending') {
