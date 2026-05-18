@@ -1173,42 +1173,19 @@ function confirmAddFaq() {
 
 // ===== SAVE =====
 async function saveAllData() {
-  // ── ป้องกันข้อมูลทับกัน: โหลด Firestore ล่าสุดก่อน แล้ว merge ──
+  // ── ป้องกันข้อมูลทับกัน: รวมเฉพาะ "หมวดหมู่ใหม่" จาก admin อื่น ──
+  // หมายเหตุ: ไม่ merge ระดับเอกสาร เพราะแยกไม่ออกว่า "ลบตั้งใจ" vs "admin อื่นเพิ่ม"
   if (window._loadCategories) {
     try {
       const latest = await window._loadCategories();
       if (latest && latest.length) {
-        let mergedCats = 0, mergedDocs = 0;
-
-        // 1) หมวดหมู่ใหม่ที่ admin อื่นเพิ่มไว้ (ไม่มีใน adminData ของเรา)
         const ourIds = new Set(adminData.map(c => c.id));
         const newCats = latest.filter(c => !ourIds.has(c.id));
         if (newCats.length > 0) {
           adminData = [...adminData, ...newCats];
-          mergedCats = newCats.length;
-        }
-
-        // 2) เอกสารใหม่ในหมวดหมู่ที่มีอยู่ (admin อื่นเพิ่ม URL ที่เราไม่มี)
-        latest.forEach(latestCat => {
-          const ourCat = adminData.find(c => c.id === latestCat.id);
-          if (!ourCat) return;
-          latestCat.sections.forEach((latestSec, si) => {
-            if (!ourCat.sections[si]) return;
-            latestSec.docs.forEach(ld => {
-              if (!ld.url) return;
-              const exists = ourCat.sections[si].docs.some(od => od.url === ld.url);
-              if (!exists) {
-                ourCat.sections[si].docs.push({ title: ld.title, url: ld.url });
-                mergedDocs++;
-              }
-            });
-          });
-        });
-
-        if (mergedCats > 0 || mergedDocs > 0) {
           buildSidebar();
-          toast(`🔀 รวมข้อมูลจาก admin อื่น: ${mergedCats} หมวด + ${mergedDocs} เอกสาร`);
-          await new Promise(r => setTimeout(r, 800)); // ให้ toast แสดงก่อน
+          toast(`🔀 รวม ${newCats.length} หมวดหมู่ใหม่จาก admin อื่น`);
+          await new Promise(r => setTimeout(r, 800));
         }
       }
     } catch(e) { /* โหลดไม่ได้ก็บันทึกต่อ */ }
