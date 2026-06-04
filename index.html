@@ -1160,23 +1160,41 @@ function buildRecent() {
       });
     });
   });
-  // แสดง 5 รายการล่าสุด (ตามลำดับที่เพิ่มในระบบ — ท้ายสุดของข้อมูล)
-  const recent = all.slice(-5).reverse();
+
+  // เรียงตาม addedAt จริง (ถ้ามี) → เอกสารที่เพิ่งเพิ่มล่าสุดขึ้นก่อน
+  // เอกสารเก่าที่ไม่มี timestamp ให้อยู่ท้าย
+  all.sort((a, b) => {
+    const tA = a.doc.addedAt ? new Date(a.doc.addedAt).getTime() : 0;
+    const tB = b.doc.addedAt ? new Date(b.doc.addedAt).getTime() : 0;
+    if (tB !== tA) return tB - tA;          // มี timestamp → เรียงตามเวลา
+    return 0;                                // ไม่มี timestamp → คงลำดับเดิม
+  });
+
+  const recent = all.slice(0, 8); // แสดง 8 รายการล่าสุด
   const section = document.getElementById('recentSection');
   const list = document.getElementById('recentList');
   if (!section || !list || recent.length === 0) return;
   section.style.display = 'block';
-  list.innerHTML = recent.map(r => `
+
+  list.innerHTML = recent.map(r => {
+    // แสดงวันที่เพิ่ม ถ้ามี addedAt
+    let dateLabel = '';
+    if (r.doc.addedAt) {
+      const d = new Date(r.doc.addedAt);
+      dateLabel = d.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'2-digit' });
+    }
+    return `
     <div class="recent-item" style="border-left-color:${r.cat.color}"
          onclick="showCat('${r.cat.id}')">
       <div class="recent-item-icon">${r.cat.icon || '📄'}</div>
       <div class="recent-item-info">
         <div class="recent-item-title">${r.doc.title}</div>
-        <div class="recent-item-cat">${r.cat.title} › ${r.sec.title}</div>
+        <div class="recent-item-cat">${r.cat.title} › ${r.sec.title}${dateLabel ? ' · ' + dateLabel : ''}</div>
       </div>
       <span class="recent-item-badge">ดูเอกสาร</span>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+
   const upd = document.getElementById('recentUpdated');
   if (upd) upd.textContent = `อัปเดต ${new Date().toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'})}`;
 }

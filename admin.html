@@ -1071,7 +1071,11 @@ function deleteFaq(catId, fi) {
 function addDoc(catId, si) {
   const cat = adminData.find(c => c.id === catId);
   if (cat) {
-    cat.sections[si].docs.push({ title: 'เอกสารใหม่', url: '' });
+    cat.sections[si].docs.push({
+      title: 'เอกสารใหม่',
+      url: '',
+      addedAt: new Date().toISOString()   // ← timestamp สำหรับ "เพิ่มล่าสุด"
+    });
     writeLog('add', 'doc', 'เอกสารใหม่', 'ใน ' + cat.title + ' > ' + cat.sections[si].title);
     editCat(catId);
     toast('➕ เพิ่มเอกสารแล้ว');
