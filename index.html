@@ -1153,21 +1153,23 @@ function setDark(on) {
 // ======== RECENT DOCUMENTS ========
 function buildRecent() {
   const all = [];
+  let idx = 0;
   currentData.forEach(cat => {
     cat.sections.forEach(sec => {
       sec.docs.forEach(doc => {
-        if (doc.url) all.push({ cat, sec, doc });
+        if (doc.url) all.push({ cat, sec, doc, idx: idx++ });
       });
     });
   });
 
   // เรียงตาม addedAt จริง (ถ้ามี) → เอกสารที่เพิ่งเพิ่มล่าสุดขึ้นก่อน
-  // เอกสารเก่าที่ไม่มี timestamp ให้อยู่ท้าย
+  // เอกสารเก่าที่ไม่มี timestamp ใช้ตำแหน่งในอาร์เรย์เป็น tiebreaker
+  // (ตำแหน่งท้ายสุด = เพิ่มทีหลังสุด = แสดงก่อน)
   all.sort((a, b) => {
     const tA = a.doc.addedAt ? new Date(a.doc.addedAt).getTime() : 0;
     const tB = b.doc.addedAt ? new Date(b.doc.addedAt).getTime() : 0;
-    if (tB !== tA) return tB - tA;          // มี timestamp → เรียงตามเวลา
-    return 0;                                // ไม่มี timestamp → คงลำดับเดิม
+    if (tA !== tB) return tB - tA;    // มี timestamp → เรียงตามเวลา
+    return b.idx - a.idx;             // ไม่มี timestamp → ตำแหน่งท้าย = ล่าสุด
   });
 
   const recent = all.slice(0, 8); // แสดง 8 รายการล่าสุด
