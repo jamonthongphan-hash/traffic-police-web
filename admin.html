@@ -625,6 +625,32 @@ function saveAppsScriptUrl() {
   toast('✅ บันทึก Apps Script URL แล้ว');
 }
 
+// ===== AUTO BACKUP TO GOOGLE DRIVE =====
+async function backupToDrive(data) {
+  try {
+    const url = window._appsScriptUrl || localStorage.getItem('appsScriptUrl') || DEFAULT_APPS_SCRIPT_URL;
+    if (!url) return;
+    const jsonStr = JSON.stringify(data, null, 2);
+    // base64 encode with UTF-8 support (Thai chars)
+    const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const totalDocs = data.reduce((n, c) => n + c.sections.reduce((m, s) => m + s.docs.length, 0), 0);
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        fileName: `backup-${ts}_${data.length}cat_${totalDocs}docs.json`,
+        mimeType: 'application/json',
+        fileData: base64,
+        catTitle: '_backups'
+      }),
+      redirect: 'follow'
+    });
+  } catch(e) {
+    console.warn('[backup] Drive backup failed (non-critical):', e.message);
+  }
+}
+
 function loadGDriveConfigUI() {
   const saved = localStorage.getItem('appsScriptUrl');
   const input = document.getElementById('appsScriptUrlInput');
@@ -1203,6 +1229,8 @@ async function saveAllData() {
   let totalDocs = 0;
   adminData.forEach(c => c.sections.forEach(s => { totalDocs += s.docs.length; }));
   writeLog('save_all', 'system', 'ทั้งหมด', adminData.length + ' หมวดหมู่ · ' + totalDocs + ' เอกสาร');
+  // backup to Google Drive in background (fire-and-forget)
+  backupToDrive(JSON.parse(JSON.stringify(adminData)));
   buildSidebar();
   document.getElementById('dataChangedBanner').classList.remove('show');
   toast('💾 บันทึกข้อมูลสำเร็จ!');
