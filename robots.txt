@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /super-admin.html
+Disallow: /register.html
+Disallow: /bkk-traffic-v5.html
+Disallow: /.firebase/
+Disallow: /.claude/
+Disallow: /appscript-project/
+
+Sitemap: https://police-traffic-manual.pages.dev/sitemap.xml
