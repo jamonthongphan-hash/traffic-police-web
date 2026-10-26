@@ -452,6 +452,20 @@
           <div id="activityPanel"></div>
           <div id="versionPanel"></div>
         </div>
+        <!-- SPOTLIGHT PANEL -->
+        <div class="export-panel" id="spotlightPanel" style="border-left:4px solid #ff4757;margin-bottom:16px">
+          <h3>🔴 Spotlight — หัวข้อน่าสนใจ (ไฟกระพริบ)</h3>
+          <p style="color:#666;font-size:13px;margin-bottom:14px;line-height:1.7">
+            เลือกหัวข้อที่ต้องการให้มีไฟกระพริบสีแดง ทั้งใน Navigation bar และ Card หน้าหลัก<br>
+            ผู้ใช้ทุกคนจะเห็นไฟกระพริบทันทีเมื่อกดบันทึก
+          </p>
+          <div id="spotlightCheckboxes" style="display:flex;flex-wrap:wrap;gap:8px 14px;margin-bottom:14px">
+            <span style="color:#999;font-size:13px">⏳ กำลังโหลดหมวดหมู่...</span>
+          </div>
+          <button class="btn btn-red" onclick="saveSpotlightSettings()">🔴 บันทึก Spotlight</button>
+          <span id="spotlightStatus" style="font-size:13px;margin-left:12px;color:#2e7d32"></span>
+        </div>
+
         <div class="export-panel" id="importPanel">
           <h3>📥 นำเข้าข้อมูล (Import data.js)</h3>
           <p>วางข้อมูล JSON จากไฟล์ data.js เพื่ออัปเดตข้อมูลทั้งหมด จากนั้นกดปุ่มนำเข้า</p>
@@ -660,6 +674,50 @@ function loadGDriveConfigUI() {
   }
 }
 
+// ===== SPOTLIGHT =====
+let currentSpotlight = [];
+
+function buildSpotlightUI(catIds) {
+  currentSpotlight = catIds || [];
+  const wrap = document.getElementById('spotlightCheckboxes');
+  if (!wrap || !adminData || !adminData.length) return;
+  wrap.innerHTML = adminData.map(cat => `
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;
+      padding:6px 10px;border-radius:8px;border:1.5px solid ${currentSpotlight.includes(cat.id) ? '#ff4757' : '#e0e0e0'};
+      background:${currentSpotlight.includes(cat.id) ? '#fff0f2' : 'white'};
+      transition:all 0.2s" id="spot-label-${cat.id}">
+      <input type="checkbox" value="${cat.id}"
+        ${currentSpotlight.includes(cat.id) ? 'checked' : ''}
+        onchange="onSpotlightChange(this)"
+        style="width:16px;height:16px;accent-color:#ff4757">
+      <span>${cat.icon || ''} ${cat.title}</span>
+    </label>
+  `).join('');
+}
+
+function onSpotlightChange(cb) {
+  const label = document.getElementById('spot-label-' + cb.value);
+  if (label) {
+    label.style.borderColor = cb.checked ? '#ff4757' : '#e0e0e0';
+    label.style.background  = cb.checked ? '#fff0f2' : 'white';
+  }
+}
+
+async function saveSpotlightSettings() {
+  const selected = [...document.querySelectorAll('#spotlightCheckboxes input:checked')]
+    .map(el => el.value);
+  if (!window._saveSpotlight) { toast('❌ ระบบยังโหลดไม่เสร็จ'); return; }
+  try {
+    await window._saveSpotlight(selected);
+    currentSpotlight = selected;
+    const st = document.getElementById('spotlightStatus');
+    if (st) { st.textContent = '✅ บันทึกแล้ว'; setTimeout(() => st.textContent = '', 3000); }
+    toast('🔴 บันทึก Spotlight เรียบร้อย');
+  } catch(e) {
+    toast('❌ บันทึกไม่สำเร็จ: ' + e.message);
+  }
+}
+
 // ===== OVERRIDE saveData → บันทึก Firestore ด้วย =====
 // ฟังก์ชันนี้ override saveData จาก data.js
 function saveData(data) {
@@ -845,6 +903,7 @@ async function showDashboard() {
   document.getElementById('dashView').style.display = 'block';
   document.getElementById('catEditor').style.display = 'none';
   document.getElementById('exportView').style.display = 'none';
+  buildSpotlightUI(currentSpotlight);
 
   // Stats
   let totalDocs = 0, totalSecs = 0;
@@ -1398,7 +1457,7 @@ window._roleLabels = {
 <script type="module">
   import { onAuthChange } from './auth.js';
   import { logActivity, getActivityLogs, formatLog, saveVersion, getVersions, restoreVersion } from './activity-log.js';
-  import { saveCategories, loadCategories, subscribeCategories } from './data-store.js';
+  import { saveCategories, loadCategories, subscribeCategories, saveSpotlight, subscribeSpotlight } from './data-store.js';
 
   // expose ให้ regular script เรียกได้
   window._logActivity     = logActivity;
@@ -1409,6 +1468,12 @@ window._roleLabels = {
   window._restoreVersion  = restoreVersion;
   window._saveCategories  = saveCategories;
   window._loadCategories  = loadCategories;
+  window._saveSpotlight   = saveSpotlight;
+
+  // subscribe spotlight real-time
+  subscribeSpotlight(ids => {
+    if (typeof buildSpotlightUI === 'function') buildSpotlightUI(ids);
+  });
 
   // ── Real-time watch: ตรวจจับเมื่อ admin อื่นบันทึกข้อมูล ──
   let firestoreSnapshotCount = 0;

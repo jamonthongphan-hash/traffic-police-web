@@ -8,7 +8,8 @@ import {
   doc, getDoc, setDoc, onSnapshot
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-const CAT_REF = () => doc(db, 'siteData', 'categories');
+const CAT_REF      = () => doc(db, 'siteData', 'categories');
+const SPOTLIGHT_REF = () => doc(db, 'siteData', 'config');
 
 /** บันทึก categories ลง Firestore (admin only) */
 export async function saveCategories(data) {
@@ -33,5 +34,18 @@ export function subscribeCategories(callback) {
     if (snap.exists() && Array.isArray(snap.data().list)) {
       callback(snap.data().list);
     }
+  });
+}
+
+/** บันทึก spotlight catIds ลง Firestore (admin only) */
+export async function saveSpotlight(catIds) {
+  await setDoc(SPOTLIGHT_REF(), { spotlightCats: catIds }, { merge: true });
+}
+
+/** subscribe spotlight real-time */
+export function subscribeSpotlight(callback) {
+  return onSnapshot(SPOTLIGHT_REF(), snap => {
+    const ids = snap.exists() ? (snap.data().spotlightCats || []) : [];
+    callback(ids);
   });
 }

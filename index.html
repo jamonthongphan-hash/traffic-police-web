@@ -640,6 +640,27 @@
   }
   @keyframes spin { to { transform:rotate(360deg); } }
 
+  /* ── Spotlight blink dot ── */
+  .blink-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: #ff4757;
+    border-radius: 50%;
+    margin-left: 5px;
+    vertical-align: middle;
+    animation: blink-pulse 1s ease-in-out infinite;
+  }
+  .quick-card .blink-dot {
+    position: absolute; top: 8px; right: 8px;
+    width: 10px; height: 10px;
+    box-shadow: 0 0 6px #ff4757;
+  }
+  .quick-card { position: relative; }
+  @keyframes blink-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.2; transform: scale(0.6); }
+  }
+
   /* ======= SEARCH RESULTS ======= */
   #search-area { display: none; }
   .search-result-item {
@@ -1003,6 +1024,7 @@
 // ======== STATE ========
 let currentData = loadData();
 let currentCatId = null;
+let spotlightCats = [];
 
 // ======== INIT ========
 document.addEventListener('DOMContentLoaded', () => {
@@ -1039,9 +1061,10 @@ function buildNav() {
   currentData.forEach(cat => {
     const el = document.createElement('div');
     el.className = 'nav-item';
-    el.textContent = cat.icon + ' ' + cat.title;
-    el.onclick = () => showCat(cat.id);
     el.id = 'nav-' + cat.id;
+    const dot = spotlightCats.includes(cat.id) ? '<span class="blink-dot"></span>' : '';
+    el.innerHTML = cat.icon + ' ' + cat.title + dot;
+    el.onclick = () => showCat(cat.id);
     nav.appendChild(el);
   });
 }
@@ -1055,7 +1078,9 @@ function buildQuickGrid() {
     card.className = 'quick-card';
     card.style.setProperty('--card-color', cat.color);
     const docCount = cat.sections.reduce((a, s) => a + s.docs.length, 0);
+    const dot = spotlightCats.includes(cat.id) ? '<span class="blink-dot"></span>' : '';
     card.innerHTML = `
+      ${dot}
       <div class="icon">${cat.icon}</div>
       <div class="title">${cat.title}</div>
       <div class="desc">${cat.description.substring(0,60)}${cat.description.length>60?'...':''}</div>
@@ -1305,7 +1330,7 @@ function buildRecent() {
     return b.idx - a.idx;             // ไม่มี timestamp → ตำแหน่งท้าย = ล่าสุด
   });
 
-  const recent = all.slice(0, 8); // แสดง 8 รายการล่าสุด
+  const recent = all.slice(0, 2); // แสดง 2 รายการล่าสุด
   const section = document.getElementById('recentSection');
   const list = document.getElementById('recentList');
   if (!section || !list || recent.length === 0) return;
@@ -1525,7 +1550,7 @@ document.getElementById('adminModal').addEventListener('click', function(e) {
 <!-- Firebase: Visitor Counter + Real-time Categories -->
 <script type="module">
   import { trackVisit, subscribeVisitorCount } from './visitor-counter.js';
-  import { subscribeCategories } from './data-store.js';
+  import { subscribeCategories, subscribeSpotlight } from './data-store.js';
 
   trackVisit();
 
@@ -1543,6 +1568,13 @@ document.getElementById('adminModal').addEventListener('click', function(e) {
     buildQuickGrid();
     updateStats();
     buildRecent();
+  });
+
+  // spotlight real-time: ทันทีที่ admin เปลี่ยน ทุก browser จะเห็นไฟกระพริบใหม่
+  subscribeSpotlight(ids => {
+    spotlightCats = ids || [];
+    buildNav();
+    buildQuickGrid();
   });
 </script>
 
